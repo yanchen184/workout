@@ -1,0 +1,296 @@
+/* Custom styles for Workout Calendar App */
+
+/* Global styles */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* Custom calendar styles */
+.ant-picker-calendar-date-content {
+  height: 60px !important;
+  overflow: hidden;
+}
+
+.ant-picker-calendar .ant-picker-calendar-date {
+  border: 1px solid #f0f0f0;
+}
+
+.ant-picker-calendar .ant-picker-calendar-date:hover {
+  background-color: #f5f5f5;
+}
+
+.ant-picker-calendar .ant-picker-calendar-date-today {
+  border-color: #1890ff;
+}
+
+/* Workout tags in calendar */
+.workout-tag {
+  display: inline-block;
+  padding: 1px 4px;
+  margin: 1px;
+  font-size: 10px;
+  border-radius: 2px;
+  line-height: 1.2;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .ant-layout-sider {
+    position: fixed !important;
+    height: 100vh;
+    left: 0;
+    z-index: 999;
+  }
+  
+  .ant-layout-content {
+    margin-left: 0 !important;
+  }
+  
+  .ant-picker-calendar {
+    font-size: 12px;
+  }
+  
+  .ant-picker-calendar-date-content {
+    height: 40px !important;
+  }
+}
+
+/* Loading spinner customization */
+.ant-spin-dot-item {
+  background-color: #1890ff;
+}
+
+/* Form styles */
+.workout-form .ant-form-item-label > label {
+  font-weight: 600;
+}
+
+/* Statistics card styles */
+.stats-card {
+  text-align: center;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stats-card .ant-statistic-title {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.stats-card .ant-statistic-content {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+/* Progress bar customization */
+.muscle-group-progress .ant-progress-inner {
+  border-radius: 4px;
+}
+
+/* Recent activity styles */
+.recent-activity-item {
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  border-left: 4px solid;
+  transition: all 0.3s ease;
+}
+
+.recent-activity-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.recent-activity-item.completed {
+  border-left-color: #52c41a;
+  background-color: #f6ffed;
+}
+
+.recent-activity-item.planned {
+  border-left-color: #faad14;
+  background-color: #fff7e6;
+}
+
+/* Calendar badge styles */
+.workout-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 1;
+}
+
+/* Muscle group selection cards */
+.muscle-group-card {
+  position: relative;
+  transition: all 0.3s ease;
+  transform-origin: center;
+}
+
+.muscle-group-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.muscle-group-card.selected {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.muscle-group-card .ant-card-body {
+  position: relative;
+  overflow: hidden;
+}
+
+.muscle-group-card .check-mark {
+  animation: checkMarkBounce 0.3s ease-out;
+}
+
+@keyframes checkMarkBounce {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Status card hover effect */
+.status-card {
+  transition: all 0.3s ease;
+}
+
+.status-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Table styles */
+.workout-table .ant-table-thead > tr > th {
+  background-color: #fafafa;
+  font-weight: 600;
+  text-align: center;
+}
+
+.workout-table .ant-table-tbody > tr:hover > td {
+  background-color: #f5f5f5;
+}
+
+/* Workout record row styles */
+.workout-row-completed {
+  background-color: rgba(82, 196, 26, 0.02);
+}
+
+.workout-row-completed:hover {
+  background-color: rgba(82, 196, 26, 0.05) !important;
+}
+
+.workout-row-planned {
+  background-color: rgba(250, 173, 20, 0.02);
+}
+
+.workout-row-planned:hover {
+  background-color: rgba(250, 173, 20, 0.05) !important;
+}
+
+/* Table cell improvements */
+.ant-table-tbody > tr > td {
+  vertical-align: middle;
+  padding: 16px 8px;
+}
+
+/* Muscle group tags in table */
+.ant-tag {
+  margin: 2px;
+  border: none;
+  font-weight: 500;
+}
+
+/* Status badge improvements */
+.ant-badge-status-dot {
+  width: 12px;
+  height: 12px;
+}
+
+/* Header styles */
+.app-header {
+  border-bottom: 1px solid #f0f0f0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Sidebar styles */
+.app-sider {
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.05);
+}
+
+.app-sider .ant-menu-item-selected {
+  background-color: #e6f7ff !important;
+  border-radius: 6px;
+  margin: 4px 8px;
+  width: calc(100% - 16px);
+}
+
+/* Login page styles */
+.login-container {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-card {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.login-card .ant-card-body {
+  padding: 32px;
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Scrollbar customization */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}

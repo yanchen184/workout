@@ -1,120 +1,71 @@
-import { GitHubBanner, Refine } from "@refinedev/core";
-import { DevtoolsPanel, DevtoolsProvider } from "@refinedev/devtools";
-import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
+import React from "react";
+import { Refine, Authenticated } from "@refinedev/core";
+import { BrowserRouter, Routes, Route, Outlet, Navigate } from "react-router-dom";
+import { ConfigProvider } from "antd";
+import zhTW from "antd/locale/zh_TW";
 
-import {
-  ErrorComponent,
-  ThemedLayoutV2,
-  ThemedSiderV2,
-  useNotificationProvider,
-} from "@refinedev/antd";
-import "@refinedev/antd/dist/reset.css";
-
-import routerBindings, {
-  DocumentTitleHandler,
-  NavigateToResource,
-  UnsavedChangesNotifier,
-} from "@refinedev/react-router";
-import dataProvider from "@refinedev/simple-rest";
-import { App as AntdApp } from "antd";
-import { BrowserRouter, Outlet, Route, Routes } from "react-router";
-import { Header } from "./components/header";
-import { ColorModeContextProvider } from "./contexts/color-mode";
-import {
-  BlogPostCreate,
-  BlogPostEdit,
-  BlogPostList,
-  BlogPostShow,
-} from "./pages/blog-posts";
-import {
-  CategoryCreate,
-  CategoryEdit,
-  CategoryList,
-  CategoryShow,
-} from "./pages/categories";
+import { firebaseDataProvider } from "./providers/dataProvider";
+import { firebaseAuthProvider } from "./providers/authProvider";
+import WorkoutPage from "./pages/WorkoutPage";
+import LoginPage from "./pages/LoginPage";
 
 function App() {
   return (
-    <BrowserRouter>
-      <GitHubBanner />
-      <RefineKbarProvider>
-        <ColorModeContextProvider>
-          <AntdApp>
-            <DevtoolsProvider>
-              <Refine
-                dataProvider={dataProvider("https://api.fake-rest.refine.dev")}
-                notificationProvider={useNotificationProvider}
-                routerProvider={routerBindings}
-                resources={[
-                  {
-                    name: "blog_posts",
-                    list: "/blog-posts",
-                    create: "/blog-posts/create",
-                    edit: "/blog-posts/edit/:id",
-                    show: "/blog-posts/show/:id",
-                    meta: {
-                      canDelete: true,
-                    },
-                  },
-                  {
-                    name: "categories",
-                    list: "/categories",
-                    create: "/categories/create",
-                    edit: "/categories/edit/:id",
-                    show: "/categories/show/:id",
-                    meta: {
-                      canDelete: true,
-                    },
-                  },
-                ]}
-                options={{
-                  syncWithLocation: true,
-                  warnWhenUnsavedChanges: true,
-                  useNewQueryKeys: true,
-                  projectId: "UAcIBU-JMBX7s-pYI78j",
-                }}
-              >
-                <Routes>
-                  <Route
-                    element={
-                      <ThemedLayoutV2
-                        Header={() => <Header sticky />}
-                        Sider={(props) => <ThemedSiderV2 {...props} fixed />}
-                      >
-                        <Outlet />
-                      </ThemedLayoutV2>
-                    }
-                  >
-                    <Route
-                      index
-                      element={<NavigateToResource resource="blog_posts" />}
-                    />
-                    <Route path="/blog-posts">
-                      <Route index element={<BlogPostList />} />
-                      <Route path="create" element={<BlogPostCreate />} />
-                      <Route path="edit/:id" element={<BlogPostEdit />} />
-                      <Route path="show/:id" element={<BlogPostShow />} />
-                    </Route>
-                    <Route path="/categories">
-                      <Route index element={<CategoryList />} />
-                      <Route path="create" element={<CategoryCreate />} />
-                      <Route path="edit/:id" element={<CategoryEdit />} />
-                      <Route path="show/:id" element={<CategoryShow />} />
-                    </Route>
-                    <Route path="*" element={<ErrorComponent />} />
-                  </Route>
-                </Routes>
-
-                <RefineKbar />
-                <UnsavedChangesNotifier />
-                <DocumentTitleHandler />
-              </Refine>
-              <DevtoolsPanel />
-            </DevtoolsProvider>
-          </AntdApp>
-        </ColorModeContextProvider>
-      </RefineKbarProvider>
-    </BrowserRouter>
+    <ConfigProvider locale={zhTW}>
+      <BrowserRouter>
+        <Refine
+          dataProvider={firebaseDataProvider}
+          authProvider={firebaseAuthProvider}
+          resources={[
+            {
+              name: "workouts",
+              list: "/workouts",
+              create: "/workouts/create",
+              edit: "/workouts/edit/:id",
+              show: "/workouts/show/:id",
+            },
+            {
+              name: "settings",
+              list: "/settings",
+              create: "/settings/create",
+              edit: "/settings/edit/:id",
+            },
+          ]}
+          options={{
+            syncWithLocation: true,
+            warnWhenUnsavedChanges: true,
+          }}
+        >
+          <Routes>
+            {/* Redirect workout-calendar paths to root */}
+            <Route path="/workout-calendar" element={<Navigate to="/" replace />} />
+            <Route path="/workout-calendar/*" element={<Navigate to="/" replace />} />
+            
+            {/* Main authenticated routes */}
+            <Route
+              element={
+                <Authenticated
+                  key="authenticated-routes"
+                  fallback={<LoginPage />}
+                >
+                  <Outlet />
+                </Authenticated>
+              }
+            >
+              <Route index element={<WorkoutPage />} />
+              <Route path="/" element={<WorkoutPage />} />
+              <Route path="/workouts" element={<WorkoutPage />} />
+            </Route>
+            
+            {/* Login route */}
+            <Route path="/login" element={<LoginPage />} />
+            
+            {/* Catch all route */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Refine>
+      </BrowserRouter>
+    </ConfigProvider>
   );
 }
 
