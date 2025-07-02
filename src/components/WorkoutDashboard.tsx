@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Card, Row, Col, Tag, Space, Alert, Button, Modal, Slider, message } from "antd";
-import { WarningOutlined, SettingOutlined } from "@ant-design/icons";
+import { SettingOutlined } from "@ant-design/icons";
 import { useList } from "@refinedev/core";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -13,6 +13,25 @@ import { getEffectiveCompletionStatus } from "../utils/dateUtils";
 
 // Extend dayjs with relativeTime plugin
 dayjs.extend(relativeTime);
+
+// Define types for cardio and rest day data
+interface CardioActivity {
+  date: string;
+  dateObj: dayjs.Dayjs;
+  type: string;
+  distance?: number;
+  duration?: number;
+  calories?: number;
+  notes?: string;
+  isRestDay: boolean;
+}
+
+interface RestDay {
+  date: string;
+  dateObj: dayjs.Dayjs;
+  notes?: string;
+  hasCardio: boolean;
+}
 
 const WorkoutDashboard: React.FC = () => {
   const currentUser = auth.currentUser;
@@ -39,8 +58,8 @@ const WorkoutDashboard: React.FC = () => {
   const cardioAndRestStats = useMemo(() => {
     if (!workoutData?.data) {
       return {
-        cardioActivities: [],
-        restDays: [],
+        cardioActivities: [] as CardioActivity[],
+        restDays: [] as RestDay[],
         cardioStats: {
           totalSessions: 0,
           totalDistance: 0,
@@ -56,8 +75,8 @@ const WorkoutDashboard: React.FC = () => {
     const last30Days = now.subtract(30, 'day');
     
     // Filter recent cardio activities and rest days
-    const recentCardioActivities = [];
-    const recentRestDays = [];
+    const recentCardioActivities: CardioActivity[] = [];
+    const recentRestDays: RestDay[] = [];
     const cardioTypeCount = new Map();
     let totalDistance = 0;
     let totalDuration = 0;
@@ -133,6 +152,7 @@ const WorkoutDashboard: React.FC = () => {
       }
     };
   }, [workoutData]);
+  
   const muscleGroupStats = useMemo(() => {
     if (!workoutData?.data) {
       return {
@@ -442,7 +462,7 @@ const WorkoutDashboard: React.FC = () => {
                       other: { label: "其他", emoji: "🏃", color: "#666" }
                     };
                     
-                    const typeInfo = cardioTypes[activity.type] || cardioTypes.other;
+                    const typeInfo = (cardioTypes as any)[activity.type] || cardioTypes.other;
                     
                     return (
                       <div 
