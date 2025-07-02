@@ -3,12 +3,16 @@ import { Card, Row, Col, Tag, Space, Alert, Button, Modal, Slider, message } fro
 import { WarningOutlined, SettingOutlined } from "@ant-design/icons";
 import { useList } from "@refinedev/core";
 import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
 import { WorkoutRecord, MuscleGroup } from "../types";
 import { getMuscleGroupConfig } from "../config/muscleGroups";
 import { auth } from "../config/firebase";
 import { useSettings } from "../hooks/useSettings";
 import { SettingKey } from "../types/settings";
 import { getEffectiveCompletionStatus } from "../utils/dateUtils";
+
+// Extend dayjs with relativeTime plugin
+dayjs.extend(relativeTime);
 
 const WorkoutDashboard: React.FC = () => {
   const currentUser = auth.currentUser;
@@ -31,7 +35,104 @@ const WorkoutDashboard: React.FC = () => {
     },
   });
 
-  // Calculate muscle group last workout dates and warnings
+  // Calculate cardio and rest day statistics
+  const cardioAndRestStats = useMemo(() => {
+    if (!workoutData?.data) {
+      return {
+        cardioActivities: [],
+        restDays: [],
+        cardioStats: {
+          totalSessions: 0,
+          totalDistance: 0,
+          totalDuration: 0,
+          totalCalories: 0,
+          mostFrequentType: null
+        }
+      };
+    }
+
+    const workouts = workoutData.data;
+    const now = dayjs();
+    const last30Days = now.subtract(30, 'day');
+    
+    // Filter recent cardio activities and rest days
+    const recentCardioActivities = [];
+    const recentRestDays = [];
+    const cardioTypeCount = new Map();
+    let totalDistance = 0;
+    let totalDuration = 0;
+    let totalCalories = 0;
+    let totalSessions = 0;
+
+    workouts.forEach(workout => {
+      const workoutDate = dayjs(workout.date);
+      
+      // Only consider recent workouts (last 30 days) and completed ones
+      if (workoutDate.isAfter(last30Days) && getEffectiveCompletionStatus(workout)) {
+        
+        // Check for rest days
+        if ((workout as any).isRestDay) {
+          recentRestDays.push({
+            date: workoutDate.format('YYYY-MM-DD'), // Store as string
+            dateObj: workoutDate, // Store dayjs object for sorting and display
+            notes: workout.notes,
+            hasCardio: !!(workout as any).cardioDetails
+          });
+        }
+        
+        // Check for cardio activities
+        if ((workout as any).cardioDetails) {
+          const cardio = (workout as any).cardioDetails;
+          totalSessions++;
+          
+          if (cardio.distance) totalDistance += cardio.distance;
+          if (cardio.duration) totalDuration += cardio.duration;
+          if (cardio.calories) totalCalories += cardio.calories;
+          
+          // Count cardio types
+          const count = cardioTypeCount.get(cardio.type) || 0;
+          cardioTypeCount.set(cardio.type, count + 1);
+          
+          recentCardioActivities.push({
+            date: workoutDate.format('YYYY-MM-DD'), // Store as string
+            dateObj: workoutDate, // Store dayjs object for sorting and display
+            type: cardio.type,
+            distance: cardio.distance,
+            duration: cardio.duration,
+            calories: cardio.calories,
+            notes: cardio.notes,
+            isRestDay: (workout as any).isRestDay
+          });
+        }
+      }
+    });
+
+    // Find most frequent cardio type
+    let mostFrequentType = null;
+    let maxCount = 0;
+    cardioTypeCount.forEach((count, type) => {
+      if (count > maxCount) {
+        maxCount = count;
+        mostFrequentType = type;
+      }
+    });
+
+    // Sort by date (most recent first)
+    recentCardioActivities.sort((a, b) => b.dateObj.valueOf() - a.dateObj.valueOf());
+    recentRestDays.sort((a, b) => b.dateObj.valueOf() - a.dateObj.valueOf());
+
+    return {
+      cardioActivities: recentCardioActivities.slice(0, 10), // Last 10 activities
+      restDays: recentRestDays.slice(0, 10), // Last 10 rest days
+      cardioStats: {
+        totalSessions,
+        totalDistance,
+        totalDuration,
+        totalCalories,
+        mostFrequentType
+      }
+    };
+  }, [workoutData]);
   const muscleGroupStats = useMemo(() => {
     if (!workoutData?.data) {
       return {
@@ -48,10 +149,12 @@ const WorkoutDashboard: React.FC = () => {
     const muscleGroupLastWorkout = new Map<MuscleGroup, dayjs.Dayjs>();
     const restWarnings: Array<{muscleGroup: MuscleGroup, daysSinceLastWorkout: number}> = [];
 
-    // Find last workout date for each muscle group
+    // Find last workout date for each muscle group (exclude CARDIO)
     workouts.forEach(workout => {
       if (getEffectiveCompletionStatus(workout) && !workout.isRestDay) {
-        workout.muscleGroups.forEach(muscleGroup => {
+        workout.muscleGroups
+          .filter(muscleGroup => muscleGroup !== MuscleGroup.CARDIO) // Exclude cardio from muscle group tracking
+          .forEach(muscleGroup => {
           const workoutDate = dayjs(workout.date);
           const lastWorkout = muscleGroupLastWorkout.get(muscleGroup);
           if (!lastWorkout || workoutDate.isAfter(lastWorkout)) {
@@ -61,8 +164,10 @@ const WorkoutDashboard: React.FC = () => {
       }
     });
 
-    // Create muscle group data with color coding
-    const muscleGroups = Object.values(MuscleGroup).map(muscleGroup => {
+    // Create muscle group data with color coding (exclude CARDIO)
+    const muscleGroups = Object.values(MuscleGroup)
+      .filter(muscleGroup => muscleGroup !== MuscleGroup.CARDIO) // Exclude cardio from muscle group status
+      .map(muscleGroup => {
       const config = getMuscleGroupConfig(muscleGroup);
       const lastWorkout = muscleGroupLastWorkout.get(muscleGroup);
       
@@ -113,8 +218,8 @@ const WorkoutDashboard: React.FC = () => {
         }
       }
 
-      // Add to warnings if needed
-      if (daysSince >= restDays) {
+      // Add to warnings if needed (exclude CARDIO)
+      if (daysSince >= restDays && muscleGroup !== MuscleGroup.CARDIO) {
         restWarnings.push({
           muscleGroup,
           daysSinceLastWorkout: daysSince
@@ -302,6 +407,170 @@ const WorkoutDashboard: React.FC = () => {
           </Space>
         </div>
       </Card>
+
+      {/* Cardio Activities and Rest Days */}
+      <Row gutter={[16, 16]} style={{ margin: "16px 0" }}>
+        {/* Cardio Activities */}
+        <Col xs={24} lg={12}>
+          <Card 
+            title={
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span>🏃 近期有氧活動</span>
+                {cardioAndRestStats.cardioStats.totalSessions > 0 && (
+                  <Tag color="orange">{cardioAndRestStats.cardioStats.totalSessions} 次</Tag>
+                )}
+              </div>
+            }
+            loading={isLoading}
+            size="small"
+          >
+            {cardioAndRestStats.cardioActivities.length > 0 ? (
+              <>
+                {/* Cardio Activities List */}
+                <div style={{ maxHeight: "400px", overflowY: "auto" }}>
+                  {cardioAndRestStats.cardioActivities.map((activity, index) => {
+                    const cardioTypes = {
+                      running: { label: "跑步", emoji: "🏃", color: "#52c41a" },
+                      basketball: { label: "籃球", emoji: "🏀", color: "#fa8c16" },
+                      squash: { label: "壁球", emoji: "🎾", color: "#1890ff" },
+                      bowling: { label: "保齡球", emoji: "🎳", color: "#722ed1" },
+                      swimming: { label: "游泳", emoji: "🏊", color: "#13c2c2" },
+                      cycling: { label: "騎車", emoji: "🚴", color: "#eb2f96" },
+                      rope: { label: "跳繩", emoji: "🪢", color: "#f5222d" },
+                      walking: { label: "健走", emoji: "🚶", color: "#52c41a" },
+                      yoga: { label: "瑜伽", emoji: "🧘", color: "#722ed1" },
+                      other: { label: "其他", emoji: "🏃", color: "#666" }
+                    };
+                    
+                    const typeInfo = cardioTypes[activity.type] || cardioTypes.other;
+                    
+                    return (
+                      <div 
+                        key={index}
+                        style={{
+                          padding: "12px",
+                          border: "1px solid #f0f0f0",
+                          borderRadius: "6px",
+                          marginBottom: "8px",
+                          backgroundColor: activity.isRestDay ? "#f6ffed" : "#fafafa"
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <span style={{ fontSize: "18px" }}>{typeInfo.emoji}</span>
+                            <span style={{ fontWeight: "bold", color: typeInfo.color }}>{typeInfo.label}</span>
+                            {activity.isRestDay && (
+                              <Tag size="small" color="green">休息日</Tag>
+                            )}
+                          </div>
+                          <div style={{ fontSize: "12px", color: "#999" }}>
+                            {activity.dateObj.format("MM/DD")}
+                          </div>
+                        </div>
+                        
+                        <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+                          {activity.distance && (
+                            <div style={{ fontSize: "12px" }}>
+                              <span style={{ color: "#666" }}>距離: </span>
+                              <span style={{ fontWeight: "bold" }}>{activity.distance} 公里</span>
+                            </div>
+                          )}
+                          {activity.duration && (
+                            <div style={{ fontSize: "12px" }}>
+                              <span style={{ color: "#666" }}>時間: </span>
+                              <span style={{ fontWeight: "bold" }}>{activity.duration} 分鐘</span>
+                            </div>
+                          )}
+                          {activity.calories && (
+                            <div style={{ fontSize: "12px" }}>
+                              <span style={{ color: "#666" }}>熱量: </span>
+                              <span style={{ fontWeight: "bold" }}>{activity.calories} kcal</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {activity.notes && (
+                          <div style={{ marginTop: "8px", fontSize: "12px", color: "#666", fontStyle: "italic" }}>
+                            💭 {activity.notes}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              <div style={{ textAlign: "center", padding: "40px 20px", color: "#999" }}>
+                <div style={{ fontSize: "48px", marginBottom: "16px" }}>🏃</div>
+                <div style={{ fontSize: "16px", marginBottom: "8px" }}>還沒有有氧活動記錄</div>
+                <div style={{ fontSize: "14px" }}>開始記錄你的有氧運動吧！</div>
+              </div>
+            )}
+          </Card>
+        </Col>
+        
+        {/* Rest Days */}
+        <Col xs={24} lg={12}>
+          <Card 
+            title={
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span>😴 近期休息日</span>
+                {cardioAndRestStats.restDays.length > 0 && (
+                  <Tag color="green">{cardioAndRestStats.restDays.length} 天</Tag>
+                )}
+              </div>
+            }
+            loading={isLoading}
+            size="small"
+          >
+            {cardioAndRestStats.restDays.length > 0 ? (
+              <div style={{ maxHeight: "400px", overflowY: "auto" }}>
+                {cardioAndRestStats.restDays.map((restDay, index) => (
+                  <div 
+                    key={index}
+                    style={{
+                      padding: "12px",
+                      border: "1px solid #f0f0f0",
+                      borderRadius: "6px",
+                      marginBottom: "8px",
+                      backgroundColor: "#f6ffed"
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span style={{ fontSize: "18px" }}>😴</span>
+                        <span style={{ fontWeight: "bold", color: "#52c41a" }}>休息日</span>
+                        {restDay.hasCardio && (
+                          <Tag size="small" color="orange">含有氧</Tag>
+                        )}
+                      </div>
+                      <div style={{ fontSize: "12px", color: "#999" }}>
+                        {restDay.dateObj.format("MM/DD (ddd)")}
+                      </div>
+                    </div>
+                    
+                    {restDay.notes && (
+                      <div style={{ fontSize: "12px", color: "#666", fontStyle: "italic" }}>
+                        💭 {restDay.notes}
+                      </div>
+                    )}
+                    
+                    <div style={{ marginTop: "8px", fontSize: "11px", color: "#999" }}>
+                      {restDay.dateObj.fromNow()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ textAlign: "center", padding: "40px 20px", color: "#999" }}>
+                <div style={{ fontSize: "48px", marginBottom: "16px" }}>😴</div>
+                <div style={{ fontSize: "16px", marginBottom: "8px" }}>最近都沒有休息</div>
+                <div style={{ fontSize: "14px" }}>記得適當休息喔！</div>
+              </div>
+            )}
+          </Card>
+        </Col>
+      </Row>
 
       {/* Settings Modal */}
       <Modal

@@ -180,22 +180,29 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ onDateSelect }) => {
         {workout && (
           <div>
             {/* Muscle groups */}
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "2px", marginBottom: "4px" }}>
+            <div style={{ 
+              display: "flex", 
+              flexWrap: "wrap", 
+              gap: "2px", 
+              marginBottom: "4px",
+              justifyContent: "center",
+              alignItems: "center"
+            }}>
               {workout.muscleGroups.map((muscleGroup) => {
                 const config = getMuscleGroupConfig(muscleGroup);
                 return (
                   <Tooltip key={muscleGroup} title={config.label}>
-                    <Tag
-                      color={config.color}
+                    <div
                       style={{
-                        fontSize: "10px",
-                        padding: "1px 4px",
+                        fontSize: "18px", // 放大圖片
                         margin: "1px",
-                        borderRadius: "3px",
+                        filter: getEffectiveCompletionStatus(workout) ? "none" : "grayscale(0.5) opacity(0.7)",
+                        transform: getEffectiveCompletionStatus(workout) ? "scale(1)" : "scale(0.9)",
+                        transition: "all 0.2s ease"
                       }}
                     >
                       {config.icon}
-                    </Tag>
+                    </div>
                   </Tooltip>
                 );
               })}
@@ -210,16 +217,19 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ onDateSelect }) => {
               </div>
             )}
 
-            {/* Completion status */}
+            {/* 移除綠色點點，改用邊框來表示完成狀態 */}
             {getEffectiveCompletionStatus(workout) && (
-              <Badge
-                status="success"
-                style={{
-                  position: "absolute",
-                  top: "4px",
-                  right: "4px",
-                }}
-              />
+              <div style={{
+                position: "absolute",
+                top: "2px",
+                left: "2px",
+                right: "2px",
+                bottom: "2px",
+                border: "2px solid #52c41a",
+                borderRadius: "6px",
+                pointerEvents: "none",
+                opacity: 0.6
+              }} />
             )}
           </div>
         )}

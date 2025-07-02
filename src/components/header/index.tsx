@@ -7,6 +7,7 @@ import {
   Switch,
   theme,
   Typography,
+  Tag,
 } from "antd";
 import React, { useContext } from "react";
 import { ColorModeContext } from "../../contexts/color-mode";
@@ -45,6 +46,11 @@ export const Header: React.FC<RefineThemedLayoutV2HeaderProps> = ({
   return (
     <AntdLayout.Header style={headerStyles}>
       <Space>
+        {/* Version display */}
+        <Tag color="blue" style={{ fontSize: "12px" }}>
+          v1.1.0
+        </Tag>
+        
         <Switch
           checkedChildren="🌛"
           unCheckedChildren="🔆"
