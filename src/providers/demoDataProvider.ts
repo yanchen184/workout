@@ -98,7 +98,7 @@ export const demoDataProvider: DataProvider = {
     data.push(newItem);
     localStorage.setItem(storageKey, JSON.stringify(data));
 
-    return { data: newItem as TData };
+    return { data: newItem as unknown as TData };
   },
 
   // Update existing resource
@@ -161,7 +161,7 @@ export const demoDataProvider: DataProvider = {
     data.push(...newItems);
     localStorage.setItem(storageKey, JSON.stringify(data));
 
-    return { data: newItems as TData[] };
+    return { data: newItems as unknown as TData[] };
   },
 
   // Delete multiple resources
