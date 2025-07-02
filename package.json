@@ -1,12 +1,15 @@
 {
   "name": "workout-calendar",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Fitness workout calendar application with Firebase integration",
+  "homepage": "https://yanchen184.github.io/workout",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "start": "vite"
+    "start": "vite",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "@refinedev/core": "^4.47.1",
@@ -30,6 +33,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
     "typescript": "^5.2.2",
-    "vite": "^5.0.8"
+    "vite": "^5.0.8",
+    "gh-pages": "^6.1.1"
   }
 }
