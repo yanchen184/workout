@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Calendar, Badge, Card, Tag, Tooltip, Button, Space } from "antd";
 import { useList } from "@refinedev/core";
 import dayjs, { Dayjs } from "dayjs";
-import { WorkoutRecord, MuscleGroup } from "../types";
+import { WorkoutRecord } from "../types";
 import { getMuscleGroupConfig } from "../config/muscleGroups";
 import { auth } from "../config/firebase";
 import { getEffectiveCompletionStatus } from "../utils/dateUtils";
@@ -309,7 +309,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ onDateSelect }) => {
           value={currentMonth}
           mode="month"
           fullscreen={true}
-          headerRender={({ value, onChange }) => {
+          headerRender={({ value }) => {
             const year = value.year();
             const month = value.month();
             
