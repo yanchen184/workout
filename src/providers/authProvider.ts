@@ -1,10 +1,9 @@
 import { AuthProvider } from "@refinedev/core";
-import { 
+import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
-  onAuthStateChanged,
-  User
+  onAuthStateChanged
 } from "firebase/auth";
 import { auth } from "../config/firebase";
 
@@ -30,9 +29,8 @@ export const firebaseAuthProvider: AuthProvider = {
   },
 
   // Register function
-  register: async ({ email, password }) => {
+  register: async () => {
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       return {
         success: true,
         redirectTo: "/",

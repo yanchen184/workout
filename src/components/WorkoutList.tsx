@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { 
-  Table, 
-  Tag, 
-  Badge, 
-  Button, 
-  Space, 
-  Modal, 
+import {
+  Table,
+  Tag,
+  Badge,
+  Button,
+  Space,
+  Modal,
   Card,
   message,
   Popconfirm,
   Typography,
   Divider,
   Alert,
-  Spin 
+  Spin
 } from "antd";
 import { EditOutlined, DeleteOutlined, EyeOutlined, CalendarOutlined, ReloadOutlined } from "@ant-design/icons";
 import { useList, useDelete } from "@refinedev/core";
@@ -32,7 +32,7 @@ const WorkoutList: React.FC = () => {
   const [viewingRecord, setViewingRecord] = useState<WorkoutRecord | null>(null);
   const [isViewModalVisible, setIsViewModalVisible] = useState(false);
   const [debugInfo, setDebugInfo] = useState<any>(null);
-  
+
   const currentUser = auth.currentUser;
 
   // 簡化查詢，避免索引問題
@@ -57,11 +57,11 @@ const WorkoutList: React.FC = () => {
   // 在客戶端排序數據
   const sortedWorkoutData = React.useMemo(() => {
     if (!workoutData?.data) return null;
-    
+
     const sorted = [...workoutData.data].sort((a, b) => {
       return dayjs(b.date).valueOf() - dayjs(a.date).valueOf();
     });
-    
+
     return {
       ...workoutData,
       data: sorted
@@ -154,7 +154,7 @@ const WorkoutList: React.FC = () => {
   // Show error if any
   if (error) {
     const isIndexError = error.message && error.message.includes('index');
-    
+
     return (
       <Card style={{ margin: "16px 0" }}>
         <Alert
@@ -172,9 +172,9 @@ const WorkoutList: React.FC = () => {
                 </ol>
                 {error.message.includes('https://') && (
                   <div style={{ marginTop: "12px" }}>
-                    <a 
+                    <a
                       href={error.message.split('https://')[1].split(' ')[0].replace('https://', 'https://')}
-                      target="_blank" 
+                      target="_blank"
                       rel="noopener noreferrer"
                       style={{ fontWeight: "bold" }}
                     >
@@ -195,7 +195,7 @@ const WorkoutList: React.FC = () => {
             </Button>
           }
         />
-        
+
         {/* Debug info */}
         <details style={{ marginTop: "16px" }}>
           <summary style={{ cursor: "pointer", color: "#666" }}>
@@ -223,25 +223,25 @@ const WorkoutList: React.FC = () => {
         const dayObj = dayjs(date);
         const isToday = dayObj.isSame(dayjs(), 'day');
         const isYesterday = dayObj.isSame(dayjs().subtract(1, 'day'), 'day');
-        
+
         return (
           <div style={{ textAlign: "center" }}>
-            <div style={{ 
-              fontSize: "16px", 
+            <div style={{
+              fontSize: "16px",
               fontWeight: "bold",
               color: isToday ? "#52c41a" : "#333"
             }}>
               {dayObj.format("MM/DD")}
             </div>
-            <div style={{ 
-              fontSize: "12px", 
+            <div style={{
+              fontSize: "12px",
               color: "#999",
               marginTop: "2px"
             }}>
               {isToday ? "今天" : isYesterday ? "昨天" : dayObj.format("dddd")}
             </div>
-            <div style={{ 
-              fontSize: "11px", 
+            <div style={{
+              fontSize: "11px",
               color: "#ccc"
             }}>
               {dayObj.format("YYYY")}
@@ -259,9 +259,9 @@ const WorkoutList: React.FC = () => {
           {muscleGroups && muscleGroups.map((muscleGroup) => {
             const config = getMuscleGroupConfig(muscleGroup as any);
             return (
-              <Tag 
-                key={muscleGroup} 
-                color={config.color} 
+              <Tag
+                key={muscleGroup}
+                color={config.color}
                 style={{
                   margin: "2px",
                   padding: "4px 8px",
@@ -294,8 +294,8 @@ const WorkoutList: React.FC = () => {
               status={statusInfo.status}
               style={{ fontSize: "24px" }}
             />
-            <div style={{ 
-              fontSize: "12px", 
+            <div style={{
+              fontSize: "12px",
               fontWeight: "bold",
               color: statusInfo.color,
               marginTop: "4px"
@@ -312,7 +312,7 @@ const WorkoutList: React.FC = () => {
       key: "notes",
       ellipsis: true,
       render: (notes: string) => (
-        <div style={{ 
+        <div style={{
           maxWidth: "200px",
           overflow: "hidden",
           textOverflow: "ellipsis",
@@ -335,7 +335,7 @@ const WorkoutList: React.FC = () => {
       key: "actions",
       width: 120,
       align: "center" as const,
-      render: (_, record: WorkoutRecord) => (
+      render: (_: any, record: WorkoutRecord) => (
         <div style={{ display: "flex", justifyContent: "center", gap: "4px" }}>
           <Button
             type="text"
@@ -373,14 +373,14 @@ const WorkoutList: React.FC = () => {
 
   return (
     <>
-      <Card 
+      <Card
         title={
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <CalendarOutlined style={{ color: "#1890ff" }} />
             <span>訓練記錄</span>
             {displayData?.data && (
-              <Badge 
-                count={displayData.data.length} 
+              <Badge
+                count={displayData.data.length}
                 style={{ backgroundColor: '#52c41a' }}
               />
             )}
@@ -389,8 +389,8 @@ const WorkoutList: React.FC = () => {
         style={{ margin: "16px 0" }}
         extra={
           <Space>
-            <Button 
-              icon={<ReloadOutlined />} 
+            <Button
+              icon={<ReloadOutlined />}
               onClick={handleRefresh}
               size="small"
             >
@@ -449,9 +449,9 @@ const WorkoutList: React.FC = () => {
                   <div style={{ fontSize: "12px", color: "#aaa" }}>
                     當前用戶: {currentUser.email}
                   </div>
-                  <Button 
-                    type="link" 
-                    size="small" 
+                  <Button
+                    type="link"
+                    size="small"
                     onClick={handleRefresh}
                     style={{ marginTop: "8px" }}
                   >
@@ -514,9 +514,9 @@ const WorkoutList: React.FC = () => {
                 {dayjs(viewingRecord.date).format("dddd")}
               </div>
             </div>
-            
+
             <Divider />
-            
+
             <div style={{ marginBottom: "20px" }}>
               <Text strong style={{ fontSize: "16px", display: "block", marginBottom: "12px" }}>
                 🎯 訓練部位：
@@ -525,8 +525,8 @@ const WorkoutList: React.FC = () => {
                 {viewingRecord.muscleGroups && viewingRecord.muscleGroups.map((muscleGroup) => {
                   const config = getMuscleGroupConfig(muscleGroup);
                   return (
-                    <Tag 
-                      key={muscleGroup} 
+                    <Tag
+                      key={muscleGroup}
                       color={config.color}
                       style={{
                         padding: "8px 16px",
@@ -562,8 +562,8 @@ const WorkoutList: React.FC = () => {
                   {getEffectiveCompletionStatus(viewingRecord) ? "✅" : "⏳"}
                 </div>
                 <div>
-                  <div style={{ 
-                    fontWeight: "bold", 
+                  <div style={{
+                    fontWeight: "bold",
                     color: getEffectiveCompletionStatus(viewingRecord) ? "#52c41a" : "#faad14",
                     fontSize: "16px"
                   }}>
@@ -581,9 +581,9 @@ const WorkoutList: React.FC = () => {
                 <Text strong style={{ fontSize: "16px", display: "block", marginBottom: "12px" }}>
                   📝 訓練備註：
                 </Text>
-                <div style={{ 
-                  padding: "16px", 
-                  backgroundColor: "#fafafa", 
+                <div style={{
+                  padding: "16px",
+                  backgroundColor: "#fafafa",
                   borderRadius: "8px",
                   whiteSpace: "pre-wrap",
                   lineHeight: "1.6",

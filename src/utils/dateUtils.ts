@@ -142,7 +142,6 @@ export const getCompletionStatusText = (workout: { date: string; completed: bool
 } => {
   const isPast = isDatePassed(workout.date);
   const isToday = dayjs(workout.date).isSame(dayjs(), 'day');
-  const effectiveCompleted = getEffectiveCompletionStatus(workout);
   
   if (isPast) {
     if (workout.isRestDay) {

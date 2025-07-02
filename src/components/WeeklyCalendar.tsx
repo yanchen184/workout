@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { Badge, Card, Tag, Tooltip, Row, Col, Button } from "antd";
+import { Card, Tag, Tooltip, Row, Col, Button } from "antd";
 import { LeftOutlined, RightOutlined, CalendarOutlined } from "@ant-design/icons";
 import { useList } from "@refinedev/core";
 import dayjs, { Dayjs } from "dayjs";
@@ -87,11 +87,11 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ onDateSelect }) => {
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (!isDragging) return;
-    
+
     const endY = e.changedTouches[0].clientY;
     const deltaY = startY - endY;
     const threshold = 50; // Minimum swipe distance
-    
+
     if (Math.abs(deltaY) > threshold) {
       if (deltaY > 0) {
         // Swipe up - next week
@@ -101,7 +101,7 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ onDateSelect }) => {
         goToPreviousWeek();
       }
     }
-    
+
     setIsDragging(false);
   };
 
@@ -118,11 +118,11 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ onDateSelect }) => {
 
   const handleMouseUp = (e: React.MouseEvent) => {
     if (!isDragging) return;
-    
+
     const endY = e.clientY;
     const deltaY = startY - endY;
     const threshold = 30;
-    
+
     if (Math.abs(deltaY) > threshold) {
       if (deltaY > 0) {
         goToNextWeek();
@@ -130,7 +130,7 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ onDateSelect }) => {
         goToPreviousWeek();
       }
     }
-    
+
     setIsDragging(false);
   };
 
@@ -180,10 +180,10 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ onDateSelect }) => {
         {workout && (
           <div>
             {/* Muscle groups */}
-            <div style={{ 
-              display: "flex", 
-              flexWrap: "wrap", 
-              gap: "2px", 
+            <div style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "2px",
               marginBottom: "4px",
               justifyContent: "center",
               alignItems: "center"
@@ -238,7 +238,7 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ onDateSelect }) => {
   };
 
   return (
-    <Card 
+    <Card
       title={
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span>📅 週視圖</span>
@@ -305,7 +305,7 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({ onDateSelect }) => {
           {(() => {
             const dateString = selectedDate.format("YYYY-MM-DD");
             const workout = workoutMap.get(dateString);
-            
+
             if (workout) {
               return (
                 <div>

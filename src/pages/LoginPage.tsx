@@ -1,6 +1,6 @@
 import React from "react";
-import { Form, Input, Button, Card, Typography, Tabs, Space } from "antd";
-import { UserOutlined, LockOutlined, MailOutlined } from "@ant-design/icons";
+import { Form, Input, Button, Card, Typography, Tabs } from "antd";
+import { LockOutlined, MailOutlined } from "@ant-design/icons";
 import { useLogin, useRegister } from "@refinedev/core";
 
 const { Title, Text } = Typography;
@@ -30,10 +30,11 @@ const LoginPage: React.FC = () => {
     if (values.password !== values.confirmPassword) {
       return;
     }
-    
+
     register({
       email: values.email,
       password: values.password,
+      confirmPassword: values.confirmPassword,
     });
   };
 
@@ -196,8 +197,8 @@ const LoginPage: React.FC = () => {
           </div>
         </div>
 
-        <Tabs 
-          defaultActiveKey="login" 
+        <Tabs
+          defaultActiveKey="login"
           centered
           items={[
             {
@@ -213,8 +214,8 @@ const LoginPage: React.FC = () => {
           ]}
         />
 
-        <div style={{ 
-          textAlign: 'center', 
+        <div style={{
+          textAlign: 'center',
           marginTop: '24px',
           padding: '16px',
           backgroundColor: '#f5f5f5',

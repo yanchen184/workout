@@ -480,7 +480,7 @@ const WorkoutDashboard: React.FC = () => {
                             <span style={{ fontSize: "18px" }}>{typeInfo.emoji}</span>
                             <span style={{ fontWeight: "bold", color: typeInfo.color }}>{typeInfo.label}</span>
                             {activity.isRestDay && (
-                              <Tag size="small" color="green">休息日</Tag>
+                              <Tag color="green">休息日</Tag>
                             )}
                           </div>
                           <div style={{ fontSize: "12px", color: "#999" }}>
@@ -561,7 +561,7 @@ const WorkoutDashboard: React.FC = () => {
                         <span style={{ fontSize: "18px" }}>😴</span>
                         <span style={{ fontWeight: "bold", color: "#52c41a" }}>休息日</span>
                         {restDay.hasCardio && (
-                          <Tag size="small" color="orange">含有氧</Tag>
+                          <Tag color="orange">含有氧</Tag>
                         )}
                       </div>
                       <div style={{ fontSize: "12px", color: "#999" }}>

@@ -1,25 +1,23 @@
 import { DataProvider } from "@refinedev/core";
-import { 
-  collection, 
-  doc, 
-  getDocs, 
-  getDoc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  where, 
-  orderBy, 
-  limit,
-  startAfter,
-  DocumentSnapshot
+import {
+  collection,
+  doc,
+  getDocs,
+  getDoc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
+  limit
 } from "firebase/firestore";
 import { db } from "../config/firebase";
 
 // Firebase data provider for Refine
 export const firebaseDataProvider: DataProvider = {
   // Get list of resources with pagination and filtering
-  getList: async ({ resource, pagination, filters, sorters, meta }) => {
+  getList: async ({ resource, pagination, filters, sorters }) => {
     const collectionRef = collection(db, resource);
     let q = query(collectionRef);
 
@@ -44,7 +42,7 @@ export const firebaseDataProvider: DataProvider = {
     if (pagination) {
       const { current = 1, pageSize = 10 } = pagination;
       const startIndex = (current - 1) * pageSize;
-      
+
       if (startIndex > 0) {
         // For pagination, we need to implement cursor-based pagination
         // This is a simplified version
@@ -70,7 +68,7 @@ export const firebaseDataProvider: DataProvider = {
   getOne: async ({ resource, id }) => {
     const docRef = doc(db, resource, id as string);
     const docSnap = await getDoc(docRef);
-    
+
     if (!docSnap.exists()) {
       throw new Error("Document not found");
     }
