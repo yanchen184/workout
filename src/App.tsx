@@ -1,4 +1,3 @@
-import React from "react";
 import { Refine, Authenticated } from "@refinedev/core";
 import { BrowserRouter, Routes, Route, Outlet, Navigate } from "react-router-dom";
 import { ConfigProvider } from "antd";
