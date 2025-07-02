@@ -14,7 +14,11 @@ import {
   GetManyParams,
   GetManyResponse,
   CreateManyParams,
-  CreateManyResponse
+  CreateManyResponse,
+  DeleteManyParams,
+  DeleteManyResponse,
+  UpdateManyParams,
+  UpdateManyResponse
 } from "@refinedev/core";
 import {
   collection,
@@ -114,7 +118,7 @@ export const firebaseDataProvider: DataProvider = {
         ...variables,
         createdAt: now,
         updatedAt: now,
-      } as TData,
+      } as unknown as TData,
     };
   },
 
@@ -132,7 +136,7 @@ export const firebaseDataProvider: DataProvider = {
         id,
         ...variables,
         updatedAt: now,
-      } as TData,
+      } as unknown as TData,
     };
   },
 
@@ -180,13 +184,13 @@ export const firebaseDataProvider: DataProvider = {
           updatedAt: now,
         };
       })
-    ) as TData[];
+    ) as unknown as TData[];
 
     return { data };
   },
 
   // Delete multiple resources
-  deleteMany: async ({ resource, ids }) => {
+  deleteMany: async <TData extends BaseRecord = BaseRecord, TVariables = {}>({ resource, ids }: DeleteManyParams<TVariables>): Promise<DeleteManyResponse<TData>> => {
     await Promise.all(
       ids.map(async (id) => {
         const docRef = doc(db, resource, id as string);
@@ -194,11 +198,11 @@ export const firebaseDataProvider: DataProvider = {
       })
     );
 
-    return { data: ids.map((id) => ({ id })) };
+    return { data: ids.map((id) => ({ id })) as TData[] };
   },
 
   // Update multiple resources
-  updateMany: async ({ resource, ids, variables }) => {
+  updateMany: async <TData extends BaseRecord = BaseRecord, TVariables = {}>({ resource, ids, variables }: UpdateManyParams<TVariables>): Promise<UpdateManyResponse<TData>> => {
     const data = await Promise.all(
       ids.map(async (id) => {
         const docRef = doc(db, resource, id as string);
@@ -213,7 +217,7 @@ export const firebaseDataProvider: DataProvider = {
           updatedAt: now,
         };
       })
-    );
+    ) as unknown as TData[];
 
     return { data };
   },
