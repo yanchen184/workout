@@ -239,7 +239,7 @@ const WorkoutDashboard: React.FC = () => {
       }
 
       // Add to warnings if needed (exclude CARDIO)
-      if (daysSince >= restDays && muscleGroup !== MuscleGroup.CARDIO) {
+      if (daysSince >= restDays) {
         restWarnings.push({
           muscleGroup,
           daysSinceLastWorkout: daysSince
