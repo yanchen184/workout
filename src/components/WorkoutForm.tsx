@@ -3,7 +3,6 @@ import { Form, Input, DatePicker, Button, Card, message, Row, Col, Switch, Selec
 import { useCreate, useUpdate } from "@refinedev/core";
 import dayjs from "dayjs";
 import { WorkoutRecord, MuscleGroup } from "../types";
-import { getMuscleGroupConfig } from "../config/muscleGroups";
 import { auth } from "../config/firebase";
 import { deleteField } from "firebase/firestore";
 
@@ -244,7 +243,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({
     // For new records without cardio, we simply don't include the field
 
     // Final safety check: remove any undefined values from the entire object
-    const cleanWorkoutData = JSON.parse(JSON.stringify(workoutData, (key, value) => {
+    const cleanWorkoutData = JSON.parse(JSON.stringify(workoutData, (_key, value) => {
       return value === undefined ? null : value;
     }));
     
