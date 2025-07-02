@@ -1,4 +1,21 @@
-import { DataProvider } from "@refinedev/core";
+import { 
+  DataProvider,
+  BaseRecord,
+  GetListParams,
+  GetListResponse,
+  GetOneParams,
+  GetOneResponse,
+  CreateParams,
+  CreateResponse,
+  UpdateParams,
+  UpdateResponse,
+  DeleteOneParams,
+  DeleteOneResponse,
+  GetManyParams,
+  GetManyResponse,
+  CreateManyParams,
+  CreateManyResponse
+} from "@refinedev/core";
 import {
   collection,
   doc,
@@ -17,7 +34,7 @@ import { db } from "../config/firebase";
 // Firebase data provider for Refine
 export const firebaseDataProvider: DataProvider = {
   // Get list of resources with pagination and filtering
-  getList: async ({ resource, pagination, filters, sorters }) => {
+  getList: async <TData extends BaseRecord = BaseRecord>({ resource, pagination, filters, sorters }: GetListParams): Promise<GetListResponse<TData>> => {
     const collectionRef = collection(db, resource);
     let q = query(collectionRef);
 
@@ -56,7 +73,7 @@ export const firebaseDataProvider: DataProvider = {
     const data = querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
-    }));
+    })) as TData[];
 
     return {
       data,
@@ -65,7 +82,7 @@ export const firebaseDataProvider: DataProvider = {
   },
 
   // Get single resource by ID
-  getOne: async ({ resource, id }) => {
+  getOne: async <TData extends BaseRecord = BaseRecord>({ resource, id }: GetOneParams): Promise<GetOneResponse<TData>> => {
     const docRef = doc(db, resource, id as string);
     const docSnap = await getDoc(docRef);
 
@@ -77,12 +94,12 @@ export const firebaseDataProvider: DataProvider = {
       data: {
         id: docSnap.id,
         ...docSnap.data(),
-      },
+      } as TData,
     };
   },
 
   // Create new resource
-  create: async ({ resource, variables }) => {
+  create: async <TData extends BaseRecord = BaseRecord, TVariables = {}>({ resource, variables }: CreateParams<TVariables>): Promise<CreateResponse<TData>> => {
     const collectionRef = collection(db, resource);
     const now = new Date();
     const docRef = await addDoc(collectionRef, {
@@ -97,12 +114,12 @@ export const firebaseDataProvider: DataProvider = {
         ...variables,
         createdAt: now,
         updatedAt: now,
-      },
+      } as TData,
     };
   },
 
   // Update existing resource
-  update: async ({ resource, id, variables }) => {
+  update: async <TData extends BaseRecord = BaseRecord, TVariables = {}>({ resource, id, variables }: UpdateParams<TVariables>): Promise<UpdateResponse<TData>> => {
     const docRef = doc(db, resource, id as string);
     const now = new Date();
     await updateDoc(docRef, {
@@ -115,22 +132,22 @@ export const firebaseDataProvider: DataProvider = {
         id,
         ...variables,
         updatedAt: now,
-      },
+      } as TData,
     };
   },
 
   // Delete resource
-  deleteOne: async ({ resource, id }) => {
+  deleteOne: async <TData extends BaseRecord = BaseRecord, TVariables = {}>({ resource, id }: DeleteOneParams<TVariables>): Promise<DeleteOneResponse<TData>> => {
     const docRef = doc(db, resource, id as string);
     await deleteDoc(docRef);
 
     return {
-      data: { id },
+      data: { id } as TData,
     };
   },
 
   // Get multiple resources by IDs
-  getMany: async ({ resource, ids }) => {
+  getMany: async <TData extends BaseRecord = BaseRecord>({ resource, ids }: GetManyParams): Promise<GetManyResponse<TData>> => {
     const data = await Promise.all(
       ids.map(async (id) => {
         const docRef = doc(db, resource, id as string);
@@ -140,13 +157,13 @@ export const firebaseDataProvider: DataProvider = {
           ...docSnap.data(),
         };
       })
-    );
+    ) as TData[];
 
     return { data };
   },
 
   // Create multiple resources
-  createMany: async ({ resource, variables }) => {
+  createMany: async <TData extends BaseRecord = BaseRecord, TVariables = {}>({ resource, variables }: CreateManyParams<TVariables>): Promise<CreateManyResponse<TData>> => {
     const data = await Promise.all(
       variables.map(async (variable) => {
         const collectionRef = collection(db, resource);
@@ -163,7 +180,7 @@ export const firebaseDataProvider: DataProvider = {
           updatedAt: now,
         };
       })
-    );
+    ) as TData[];
 
     return { data };
   },
