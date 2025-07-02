@@ -59,7 +59,7 @@ const WorkoutPage: React.FC = () => {
           <WorkoutForm 
             mode={selectedWorkout ? "edit" : "create"}
             selectedDate={selectedDate}
-            existingWorkout={selectedWorkout}
+            existingWorkout={selectedWorkout || undefined}
             onSuccess={() => {
               setSelectedDate('');
               setSelectedWorkout(null);
@@ -131,7 +131,7 @@ const WorkoutPage: React.FC = () => {
             💪 健身日曆
           </Title>
           <Text type="secondary" style={{ fontSize: '12px' }}>
-            v1.0.0
+            v1.4.0
           </Text>
         </div>
         
@@ -160,7 +160,7 @@ const WorkoutPage: React.FC = () => {
           <Space>
             <Space align="center">
               <UserOutlined />
-              <Text>{identity?.name || 'User'}</Text>
+              <Text>{(identity as any)?.name || 'User'}</Text>
             </Space>
             <Button 
               type="text" 
