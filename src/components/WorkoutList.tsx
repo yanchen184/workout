@@ -286,7 +286,7 @@ const WorkoutList: React.FC = () => {
       key: "completed",
       width: 120,
       align: "center" as const,
-      render: (completed: boolean, record: WorkoutRecord) => {
+      render: (_: boolean, record: WorkoutRecord) => {
         const statusInfo = getCompletionStatusText(record);
         return (
           <div style={{ textAlign: "center" }}>
