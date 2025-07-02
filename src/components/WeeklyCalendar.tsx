@@ -1,9 +1,9 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { Badge, Card, Tag, Tooltip, Row, Col, Button } from "antd";
 import { LeftOutlined, RightOutlined, CalendarOutlined } from "@ant-design/icons";
 import { useList } from "@refinedev/core";
 import dayjs, { Dayjs } from "dayjs";
-import { WorkoutRecord, MuscleGroup } from "../types";
+import { WorkoutRecord } from "../types";
 import { getMuscleGroupConfig } from "../config/muscleGroups";
 import { auth } from "../config/firebase";
 import { getEffectiveCompletionStatus } from "../utils/dateUtils";
