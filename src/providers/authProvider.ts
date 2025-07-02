@@ -1,7 +1,6 @@
 import { AuthProvider } from "@refinedev/core";
 import {
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged
 } from "firebase/auth";
