@@ -74,7 +74,7 @@ const WorkoutDashboard: React.FC = () => {
     const now = dayjs();
     const last30Days = now.subtract(30, 'day');
     
-    // Filter recent cardio activities and rest days
+    // Filter recent cardio activities and rest days with explicit typing
     const recentCardioActivities: CardioActivity[] = [];
     const recentRestDays: RestDay[] = [];
     const cardioTypeCount = new Map();
