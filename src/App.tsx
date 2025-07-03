@@ -1,6 +1,6 @@
 import { Refine, Authenticated } from "@refinedev/core";
 import { BrowserRouter, Routes, Route, Outlet, Navigate } from "react-router-dom";
-import { ConfigProvider } from "antd";
+import { ConfigProvider, Tag } from "antd";
 import zhTW from "antd/locale/zh_TW";
 
 import { firebaseDataProvider } from "./providers/dataProvider";
@@ -8,10 +8,31 @@ import { firebaseAuthProvider } from "./providers/authProvider";
 import WorkoutPage from "./pages/WorkoutPage";
 import LoginPage from "./pages/LoginPage";
 
+// Version display component
+const VersionDisplay = () => {
+  const version = "1.8.0";
+  return (
+    <div style={{ 
+      position: 'fixed', 
+      top: '10px', 
+      right: '10px', 
+      zIndex: 1000,
+      background: 'rgba(255, 255, 255, 0.9)',
+      padding: '4px 8px',
+      borderRadius: '4px',
+      fontSize: '12px',
+      color: '#666'
+    }}>
+      <Tag color="blue">v{version}</Tag>
+    </div>
+  );
+};
+
 function App() {
   return (
     <ConfigProvider locale={zhTW}>
       <BrowserRouter>
+        <VersionDisplay />
         <Refine
           dataProvider={firebaseDataProvider}
           authProvider={firebaseAuthProvider}
