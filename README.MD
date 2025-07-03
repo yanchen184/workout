@@ -1,4 +1,4 @@
-# 💪 健身日曆 Workout Calendar
+# 💪 健身日曆 Workout Calendar v1.8.1
 
 一個基於 React + Refine + Firebase 的健身訓練記錄應用程序。
 
@@ -16,7 +16,11 @@
 
 ## 🚀 在線演示
 
-[查看在線演示](https://yanchen184.github.io/workout-calendar/)
+**主要訪問地址**: [https://yanchen184.github.io/workout/](https://yanchen184.github.io/workout/)
+
+**備用地址**: [https://yanchen184.github.io/workout-calendar/](https://yanchen184.github.io/workout-calendar/)
+
+> 📝 **部署狀態**: [![Deploy to GitHub Pages](https://github.com/yanchen184/workout/actions/workflows/deploy.yml/badge.svg)](https://github.com/yanchen184/workout/actions/workflows/deploy.yml)
 
 ## 🛠️ 技術棧
 
@@ -25,7 +29,7 @@
 - **狀態管理**: Refine Framework
 - **後端服務**: Firebase (Firestore + Authentication)
 - **構建工具**: Vite
-- **部署**: GitHub Pages
+- **部署**: GitHub Pages + GitHub Actions
 
 ## 📦 安裝與運行
 
@@ -33,10 +37,10 @@
 
 ```bash
 # 克隆項目
-git clone https://github.com/yanchen184/workout-calendar.git
+git clone https://github.com/yanchen184/workout.git
 
 # 進入項目目錄
-cd workout-calendar
+cd workout
 
 # 安裝依賴
 npm install
@@ -55,6 +59,16 @@ npm run build
 npm run preview
 ```
 
+### 部署到 GitHub Pages
+
+```bash
+# 自動部署（推送到 master 分支時觸發）
+git push origin master
+
+# 手動部署
+npm run deploy
+```
+
 ## 🔧 配置說明
 
 ### Firebase 配置
@@ -69,6 +83,12 @@ const firebaseConfig = {
   // ... 其他配置
 };
 ```
+
+### GitHub Pages 設定
+
+1. 前往 Repository Settings > Pages
+2. 設定 Source 為 "GitHub Actions"
+3. 推送代碼後自動部署到 `gh-pages` 分支
 
 ### 環境變量
 
@@ -137,6 +157,18 @@ VITE_FIREBASE_PROJECT_ID=your-project-id
 - 在最佳時機安排下次訓練
 - 避免過度訓練或訓練不足
 
+## 🚀 部署架構
+
+### GitHub Actions 自動部署
+- 推送到 `master` 分支時自動觸發
+- 自動建構並部署到 GitHub Pages
+- 同時部署到 `gh-pages` 分支作為備用
+
+### 版本管理
+- 版本號顯示在應用右上角
+- 每次更新都會更新版本號
+- 支持語義化版本控制
+
 ## 🤝 貢獻指南
 
 歡迎提交 Issue 和 Pull Request！
@@ -156,14 +188,15 @@ VITE_FIREBASE_PROJECT_ID=your-project-id
 
 如有問題或建議，請通過以下方式聯繫：
 
-- GitHub Issues: [提交問題](https://github.com/yanchen184/workout-calendar/issues)
-- Email: your-email@example.com
+- GitHub Issues: [提交問題](https://github.com/yanchen184/workout/issues)
+- Repository: [yanchen184/workout](https://github.com/yanchen184/workout)
 
 ## 🙏 致謝
 
 - [Refine](https://refine.dev/) - 提供優秀的 React 框架
 - [Ant Design](https://ant.design/) - 提供美觀的 UI 組件
 - [Firebase](https://firebase.google.com/) - 提供可靠的後端服務
+- [GitHub Pages](https://pages.github.com/) - 提供免費的靜態網站托管
 
 ---
 
