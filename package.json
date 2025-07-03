@@ -1,6 +1,6 @@
 {
   "name": "workout-calendar",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "description": "Fitness workout calendar application with Firebase integration",
   "homepage": "https://yanchen184.github.io/workout",
   "scripts": {
