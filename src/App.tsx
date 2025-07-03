@@ -10,7 +10,7 @@ import LoginPage from "./pages/LoginPage";
 
 // Version display component
 const VersionDisplay = () => {
-  const version = "1.8.0";
+  const version = "1.8.1"; // Updated version
   return (
     <div style={{ 
       position: 'fixed', 
