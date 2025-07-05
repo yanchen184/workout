@@ -7,10 +7,10 @@ import { firebaseDataProvider } from "./providers/dataProvider";
 import { firebaseAuthProvider } from "./providers/authProvider";
 import WorkoutPage from "./pages/WorkoutPage";
 import LoginPage from "./pages/LoginPage";
+import { APP_VERSION } from "./config/version";
 
 // Version display component
 const VersionDisplay = () => {
-  const version = "1.9.0"; // Current version
   return (
     <div style={{ 
       position: 'fixed', 
@@ -23,7 +23,7 @@ const VersionDisplay = () => {
       fontSize: '12px',
       color: '#666'
     }}>
-      <Tag color="blue">v{version}</Tag>
+      <Tag color="blue">v{APP_VERSION}</Tag>
     </div>
   );
 };
