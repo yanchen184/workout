@@ -18,9 +18,4 @@ export default defineConfig({
       '@': new URL('./src', import.meta.url).pathname,
     },
   },
-  // Ensure package.json can be imported
-  define: {
-    // Optional: you can also expose version as a global variable
-    __APP_VERSION__: JSON.stringify(process.env.npm_package_version)
-  }
 })
