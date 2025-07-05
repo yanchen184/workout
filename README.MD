@@ -1,4 +1,4 @@
-# 💪 健身日曆 Workout Calendar v1.8.1
+# 💪 健身日曆 Workout Calendar v1.9.0
 
 一個基於 React + Refine + Firebase 的健身訓練記錄應用程序。
 
@@ -162,12 +162,27 @@ VITE_FIREBASE_PROJECT_ID=your-project-id
 ### GitHub Actions 自動部署
 - 推送到 `master` 分支時自動觸發
 - 自動建構並部署到 GitHub Pages
-- 同時部署到 `gh-pages` 分支作為備用
+- 支持手動觸發部署
 
 ### 版本管理
 - 版本號顯示在應用右上角
 - 每次更新都會更新版本號
 - 支持語義化版本控制
+
+## 🔧 修復記錄 v1.9.0
+
+### GitHub Pages 部署修復
+- 修復 "HttpError: Not Found" 錯誤
+- 簡化 GitHub Actions 配置
+- 移除重複的部署作業
+- 更新 Actions 版本到最新
+- 確保 Pages 權限正確設定
+
+### 技術改進
+- 更新依賴版本
+- 優化構建配置
+- 改善部署流程穩定性
+- 增強錯誤處理
 
 ## 🤝 貢獻指南
 
