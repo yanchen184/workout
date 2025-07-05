@@ -18,8 +18,6 @@
 
 **主要訪問地址**: [https://yanchen184.github.io/workout/](https://yanchen184.github.io/workout/)
 
-**備用地址**: [https://yanchen184.github.io/workout-calendar/](https://yanchen184.github.io/workout-calendar/)
-
 > 📝 **部署狀態**: [![Deploy to GitHub Pages](https://github.com/yanchen184/workout/actions/workflows/deploy.yml/badge.svg)](https://github.com/yanchen184/workout/actions/workflows/deploy.yml)
 
 ## 🛠️ 技術棧
@@ -69,6 +67,32 @@ git push origin master
 npm run deploy
 ```
 
+## 🔧 GitHub Pages 設定
+
+### 📋 重要設定步驟：
+
+1. **前往 Repository Settings > Pages**
+2. **設定 Source 為 "Deploy from a branch"**
+3. **選擇 "gh-pages" 分支**
+4. **選擇 "/ (root)" 資料夾**
+5. **點擊 Save**
+
+### 🔄 自動部署流程：
+
+- 推送到 `master` 分支 → 自動觸發 GitHub Actions
+- GitHub Actions 構建項目 → 部署到 `gh-pages` 分支  
+- GitHub Pages 從 `gh-pages` 分支提供服務
+
+### 🛠️ 手動啟用 Pages（如果需要）：
+
+如果 Pages 未自動啟用，請手動設定：
+
+1. 進入 **Repository Settings**
+2. 滾動到 **Pages** 設定
+3. 在 **Source** 下拉選單選擇 **"Deploy from a branch"**
+4. 選擇 **"gh-pages"** 分支和 **"/ (root)"** 資料夾
+5. 點擊 **Save**
+
 ## 🔧 配置說明
 
 ### Firebase 配置
@@ -83,12 +107,6 @@ const firebaseConfig = {
   // ... 其他配置
 };
 ```
-
-### GitHub Pages 設定
-
-1. 前往 Repository Settings > Pages
-2. 設定 Source 為 "GitHub Actions"
-3. 推送代碼後自動部署到 `gh-pages` 分支
 
 ### 環境變量
 
@@ -161,28 +179,33 @@ VITE_FIREBASE_PROJECT_ID=your-project-id
 
 ### GitHub Actions 自動部署
 - 推送到 `master` 分支時自動觸發
-- 自動建構並部署到 GitHub Pages
-- 支持手動觸發部署
+- 自動建構並部署到 `gh-pages` 分支
+- GitHub Pages 從 `gh-pages` 分支提供服務
 
 ### 版本管理
 - 版本號顯示在應用右上角
-- 每次更新都會更新版本號
+- 版本配置在 `src/config/version.ts`
 - 支持語義化版本控制
 
 ## 🔧 修復記錄 v1.9.0
 
 ### GitHub Pages 部署修復
 - 修復 "HttpError: Not Found" 錯誤
+- 改用 gh-pages 分支部署方式
 - 簡化 GitHub Actions 配置
-- 移除重複的部署作業
-- 更新 Actions 版本到最新
-- 確保 Pages 權限正確設定
+- 確保兼容性和穩定性
+
+### 構建問題修復
+- 修復 package.json 導入錯誤
+- 創建獨立的版本配置文件
+- 優化構建配置
+- 改善錯誤處理
 
 ### 技術改進
-- 更新依賴版本
-- 優化構建配置
-- 改善部署流程穩定性
-- 增強錯誤處理
+- 統一版本管理系統
+- 優化部署流程穩定性
+- 增強錯誤處理機制
+- 改善文檔說明
 
 ## 🤝 貢獻指南
 
