@@ -8,12 +8,9 @@ import { firebaseAuthProvider } from "./providers/authProvider";
 import WorkoutPage from "./pages/WorkoutPage";
 import LoginPage from "./pages/LoginPage";
 
-// Import version from package.json
-import packageJson from "../package.json";
-
 // Version display component
 const VersionDisplay = () => {
-  const version = packageJson.version;
+  const version = "1.9.0"; // Current version
   return (
     <div style={{ 
       position: 'fixed', 
