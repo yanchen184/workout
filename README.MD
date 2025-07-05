@@ -71,11 +71,20 @@ npm run deploy
 
 ### 📋 重要設定步驟：
 
+**✅ 已配置 GitHub Actions 自動部署，現在需要啟用 Pages：**
+
 1. **前往 Repository Settings > Pages**
-2. **設定 Source 為 "Deploy from a branch"**
-3. **選擇 "gh-pages" 分支**
-4. **選擇 "/ (root)" 資料夾**
-5. **點擊 Save**
+   - 打開：[https://github.com/yanchen184/workout/settings/pages](https://github.com/yanchen184/workout/settings/pages)
+
+2. **設定 Pages 來源**：
+   - 在 **"Source"** 下拉選單中選擇 **"Deploy from a branch"**
+   - 在 **"Branch"** 下拉選單中選擇 **"gh-pages"**
+   - 選擇 **"/ (root)"** 資料夾
+   - 點擊 **"Save"**
+
+3. **等待部署完成**：
+   - GitHub Actions 會自動構建並推送到 gh-pages 分支
+   - 幾分鐘後網站將可在 [https://yanchen184.github.io/workout/](https://yanchen184.github.io/workout/) 訪問
 
 ### 🔄 自動部署流程：
 
