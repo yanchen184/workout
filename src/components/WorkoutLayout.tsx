@@ -16,8 +16,8 @@ import { Outlet, useNavigate, useLocation } from "react-router-dom";
 const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;
 
-// Import version from package.json - Updated to v1.0.5
-const APP_VERSION = "1.0.5";
+// Import version from package.json - Updated to v1.0.6
+const APP_VERSION = "1.0.6";
 
 const WorkoutLayout: React.FC = () => {
   const [siderCollapsed, setSiderCollapsed] = useState(false);
@@ -234,8 +234,8 @@ const WorkoutLayout: React.FC = () => {
           </Space>
           
           <Space>
-            {/* Version tag - Updated to show v1.0.5 */}
-            <Tag color="cyan" style={{ fontSize: '11px', margin: 0, fontWeight: 'bold' }}>
+            {/* Version tag - Updated to show v1.0.6 */}
+            <Tag color="purple" style={{ fontSize: '11px', margin: 0, fontWeight: 'bold' }}>
               v{APP_VERSION}
             </Tag>
             
