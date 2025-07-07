@@ -16,10 +16,10 @@ import {
 } from "antd";
 import { EditOutlined, DeleteOutlined, EyeOutlined, CalendarOutlined, ReloadOutlined } from "@ant-design/icons";
 import { useList, useDelete } from "@refinedev/core";
+import { useNavigate } from "react-router-dom";
 import { WorkoutRecord } from "../types";
 import { getMuscleGroupConfig } from "../config/muscleGroups";
 import { auth } from "../config/firebase";
-import WorkoutForm from "./WorkoutForm";
 import { formatFirebaseDate } from "../utils/dateUtils";
 import { getCompletionStatusText, getEffectiveCompletionStatus } from "../utils/dateUtils";
 import dayjs from "dayjs";
@@ -27,12 +27,11 @@ import dayjs from "dayjs";
 const { Text } = Typography;
 
 const WorkoutList: React.FC = () => {
-  const [editingRecord, setEditingRecord] = useState<WorkoutRecord | null>(null);
-  const [isModalVisible, setIsModalVisible] = useState(false);
   const [viewingRecord, setViewingRecord] = useState<WorkoutRecord | null>(null);
   const [isViewModalVisible, setIsViewModalVisible] = useState(false);
   const [debugInfo, setDebugInfo] = useState<any>(null);
 
+  const navigate = useNavigate();
   const currentUser = auth.currentUser;
 
   // 簡化查詢，避免索引問題
@@ -106,23 +105,15 @@ const WorkoutList: React.FC = () => {
     );
   };
 
-  // Handle edit workout
+  // Handle edit workout - navigate to edit page
   const handleEdit = (record: WorkoutRecord) => {
-    setEditingRecord(record);
-    setIsModalVisible(true);
+    navigate(`/edit/${record.id}?date=${record.date}`);
   };
 
   // Handle view workout details
   const handleView = (record: WorkoutRecord) => {
     setViewingRecord(record);
     setIsViewModalVisible(true);
-  };
-
-  // Handle modal close
-  const handleModalClose = () => {
-    setIsModalVisible(false);
-    setEditingRecord(null);
-    refetch();
   };
 
   // Handle view modal close
@@ -140,7 +131,7 @@ const WorkoutList: React.FC = () => {
   // Check if user is logged in
   if (!currentUser) {
     return (
-      <Card style={{ margin: "16px 0" }}>
+      <Card>
         <Alert
           message="請先登入"
           description="需要登入後才能查看訓練記錄"
@@ -156,7 +147,7 @@ const WorkoutList: React.FC = () => {
     const isIndexError = error.message && error.message.includes('index');
 
     return (
-      <Card style={{ margin: "16px 0" }}>
+      <Card>
         <Alert
           message={isIndexError ? "需要創建 Firebase 索引" : "數據載入錯誤"}
           description={
@@ -386,7 +377,6 @@ const WorkoutList: React.FC = () => {
             )}
           </div>
         }
-        style={{ margin: "16px 0" }}
         extra={
           <Space>
             <Button
@@ -463,29 +453,6 @@ const WorkoutList: React.FC = () => {
           />
         </Spin>
       </Card>
-
-      {/* Edit Modal */}
-      <Modal
-        title={
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <EditOutlined />
-            編輯訓練記錄
-          </div>
-        }
-        open={isModalVisible}
-        onCancel={handleModalClose}
-        footer={null}
-        width={700}
-        destroyOnClose
-      >
-        {editingRecord && (
-          <WorkoutForm
-            mode="edit"
-            initialValues={editingRecord}
-            onSuccess={handleModalClose}
-          />
-        )}
-      </Modal>
 
       {/* View Modal */}
       <Modal
