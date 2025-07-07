@@ -7,8 +7,8 @@ import {
   DashboardOutlined,
   LogoutOutlined,
   UserOutlined,
-  MenuUnfoldOutlined,
-  MenuFoldOutlined
+  LeftOutlined,
+  RightOutlined
 } from "@ant-design/icons";
 import { useLogout, useGetIdentity } from "@refinedev/core";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
@@ -108,8 +108,8 @@ const WorkoutLayout: React.FC = () => {
         collapsible 
         collapsed={siderCollapsed}
         theme="light"
-        width={250}
-        collapsedWidth={isMobile ? 0 : 80}
+        width={160}
+        collapsedWidth={isMobile ? 0 : 40}
         style={{
           position: isMobile ? 'fixed' : 'relative',
           height: '100vh',
@@ -118,32 +118,67 @@ const WorkoutLayout: React.FC = () => {
           bottom: 0,
           zIndex: 1000,
           boxShadow: isMobile && !siderCollapsed ? '2px 0 8px rgba(0,0,0,0.15)' : 'none',
+          transition: 'all 0.2s ease',
         }}
       >
+        {/* Logo/Title section */}
         <div style={{ 
-          padding: siderCollapsed ? '16px 8px' : '16px', 
+          padding: siderCollapsed ? '8px' : '12px', 
           textAlign: 'center',
-          borderBottom: '1px solid #f0f0f0'
+          borderBottom: '1px solid #f0f0f0',
+          minHeight: '50px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
         }}>
           {!siderCollapsed && (
-            <>
-              <Title level={4} style={{ margin: 0 }}>
-                💪 健身日曆
-              </Title>
-            </>
+            <Title level={4} style={{ margin: 0, fontSize: '14px' }}>
+              💪 健身日曆
+            </Title>
           )}
           {siderCollapsed && (
-            <div style={{ fontSize: '24px' }}>💪</div>
+            <div style={{ fontSize: '14px' }}>💪</div>
           )}
         </div>
         
-        <Menu
-          mode="inline"
-          selectedKeys={[getCurrentKey()]}
-          items={menuItems}
-          onSelect={handleMenuSelect}
-          style={{ borderRight: 0, marginTop: '8px' }}
-        />
+        {/* Menu */}
+        <div style={{ flex: 1 }}>
+          <Menu
+            mode="inline"
+            selectedKeys={[getCurrentKey()]}
+            items={menuItems}
+            onSelect={handleMenuSelect}
+            style={{ 
+              borderRight: 0, 
+              marginTop: '4px',
+              fontSize: siderCollapsed ? '11px' : '13px'
+            }}
+            inlineIndent={siderCollapsed ? 6 : 12}
+          />
+        </div>
+        
+        {/* Collapse button at bottom of sidebar */}
+        <div style={{
+          padding: '8px',
+          borderTop: '1px solid #f0f0f0',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '48px'
+        }}>
+          <Button
+            type="text"
+            icon={siderCollapsed ? <RightOutlined /> : <LeftOutlined />}
+            onClick={() => setSiderCollapsed(!siderCollapsed)}
+            size="small"
+            style={{ 
+              border: 'none',
+              boxShadow: 'none',
+              color: '#666',
+              fontSize: '12px'
+            }}
+          />
+        </div>
       </Sider>
 
       {/* Mobile overlay */}
@@ -162,7 +197,11 @@ const WorkoutLayout: React.FC = () => {
         />
       )}
 
-      <Layout style={{ marginLeft: isMobile ? 0 : (siderCollapsed ? 80 : 250) }}>
+      {/* Main content area */}
+      <Layout style={{ 
+        marginLeft: isMobile ? 0 : (siderCollapsed ? 40 : 160), 
+        transition: 'margin-left 0.2s ease' 
+      }}>
         <Header style={{ 
           padding: '0 16px', 
           background: '#fff', 
@@ -173,17 +212,20 @@ const WorkoutLayout: React.FC = () => {
           position: 'sticky',
           top: 0,
           zIndex: 100,
+          height: '64px',
         }}>
           <Space>
+            {/* Mobile menu button (only shows on mobile) */}
             {isMobile && (
               <Button
                 type="text"
-                icon={siderCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+                icon={siderCollapsed ? <RightOutlined /> : <LeftOutlined />}
                 onClick={() => setSiderCollapsed(!siderCollapsed)}
                 style={{ marginRight: 8 }}
+                size="small"
               />
             )}
-            <Title level={3} style={{ margin: 0 }}>
+            <Title level={3} style={{ margin: 0, fontSize: '18px' }}>
               {getPageTitle()}
             </Title>
           </Space>
@@ -191,7 +233,17 @@ const WorkoutLayout: React.FC = () => {
           <Space>
             <Space align="center">
               <UserOutlined />
-              <Text>{(identity as any)?.name || 'User'}</Text>
+              <Text style={{ 
+                maxWidth: '80px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}>
+                {((identity as any)?.name || 'User').length > 7 
+                  ? `${((identity as any)?.name || 'User').substring(0, 7)}...` 
+                  : ((identity as any)?.name || 'User')
+                }
+              </Text>
             </Space>
             <Button 
               type="text" 
@@ -205,19 +257,12 @@ const WorkoutLayout: React.FC = () => {
 
         <Content style={{ 
           margin: '0', 
-          padding: '16px',
-          background: '#f5f5f5',
+          padding: '4px',
+          background: '#fff',
           overflow: 'auto',
           minHeight: 'calc(100vh - 64px)',
         }}>
-          <div style={{
-            background: '#fff',
-            borderRadius: '8px',
-            minHeight: 'calc(100vh - 96px)',
-            padding: '16px',
-          }}>
-            <Outlet />
-          </div>
+          <Outlet />
         </Content>
       </Layout>
     </Layout>

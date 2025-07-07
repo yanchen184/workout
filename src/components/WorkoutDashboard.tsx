@@ -280,7 +280,7 @@ const WorkoutDashboard: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: "16px 0" }}>
+    <div>
       {/* Rest Day Warnings */}
       {muscleGroupStats.restWarnings.length > 0 && (
         <Alert
