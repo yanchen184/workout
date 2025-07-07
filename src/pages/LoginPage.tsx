@@ -192,7 +192,7 @@ const LoginPage: React.FC = () => {
           </Text>
           <div style={{ marginTop: '8px' }}>
             <Text type="secondary" style={{ fontSize: '12px' }}>
-              v1.0.0
+              v1.0.1
             </Text>
           </div>
         </div>
