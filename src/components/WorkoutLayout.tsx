@@ -16,9 +16,6 @@ import { Outlet, useNavigate, useLocation } from "react-router-dom";
 const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;
 
-// Import version from package.json
-const APP_VERSION = "1.0.1";
-
 const WorkoutLayout: React.FC = () => {
   const [siderCollapsed, setSiderCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -133,9 +130,6 @@ const WorkoutLayout: React.FC = () => {
               <Title level={4} style={{ margin: 0 }}>
                 💪 健身日曆
               </Title>
-              <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginTop: '4px' }}>
-                v{APP_VERSION}
-              </Text>
             </>
           )}
           {siderCollapsed && (
@@ -192,9 +186,6 @@ const WorkoutLayout: React.FC = () => {
             <Title level={3} style={{ margin: 0 }}>
               {getPageTitle()}
             </Title>
-            <Text type="secondary" style={{ fontSize: '12px', marginLeft: '8px' }}>
-              v{APP_VERSION}
-            </Text>
           </Space>
           
           <Space>
