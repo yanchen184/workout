@@ -17,7 +17,7 @@ const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;
 
 // Import version from package.json
-const APP_VERSION = "1.0.2";
+const APP_VERSION = "1.0.3";
 
 const WorkoutLayout: React.FC = () => {
   const [siderCollapsed, setSiderCollapsed] = useState(false);
