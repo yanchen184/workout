@@ -31,7 +31,7 @@ const VersionDisplay = () => {
 function App() {
   return (
     <ConfigProvider locale={zhTW}>
-      <BrowserRouter>
+      <BrowserRouter basename="/workout">
         <VersionDisplay />
         <Refine
           dataProvider={firebaseDataProvider}
