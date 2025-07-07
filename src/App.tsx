@@ -1,5 +1,5 @@
 import { Refine, Authenticated } from "@refinedev/core";
-import { BrowserRouter, Routes, Route, Outlet, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ConfigProvider } from "antd";
 import zhTW from "antd/locale/zh_TW";
 
@@ -42,6 +42,7 @@ function App() {
           <Routes>
             {/* Main authenticated routes */}
             <Route
+              path="/*"
               element={
                 <Authenticated
                   key="authenticated-routes"
@@ -52,13 +53,13 @@ function App() {
               }
             >
               <Route index element={<Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={<WorkoutDashboard />} />
-              <Route path="/calendar" element={<WorkoutCalendar />} />
-              <Route path="/add" element={<WorkoutForm mode="create" />} />
-              <Route path="/edit/:id" element={<WorkoutForm mode="edit" />} />
-              <Route path="/list" element={<WorkoutList />} />
+              <Route path="dashboard" element={<WorkoutDashboard />} />
+              <Route path="calendar" element={<WorkoutCalendar />} />
+              <Route path="add" element={<WorkoutForm mode="create" />} />
+              <Route path="edit/:id" element={<WorkoutForm mode="edit" />} />
+              <Route path="list" element={<WorkoutList />} />
               {/* Legacy routes for backward compatibility */}
-              <Route path="/workouts" element={<Navigate to="/list" replace />} />
+              <Route path="workouts" element={<Navigate to="/list" replace />} />
             </Route>
             
             {/* Login route */}
