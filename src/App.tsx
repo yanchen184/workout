@@ -1,38 +1,21 @@
 import { Refine, Authenticated } from "@refinedev/core";
 import { BrowserRouter, Routes, Route, Outlet, Navigate } from "react-router-dom";
-import { ConfigProvider, Tag } from "antd";
+import { ConfigProvider } from "antd";
 import zhTW from "antd/locale/zh_TW";
 
 import { firebaseDataProvider } from "./providers/dataProvider";
 import { firebaseAuthProvider } from "./providers/authProvider";
-import WorkoutPage from "./pages/WorkoutPage";
+import WorkoutLayout from "./components/WorkoutLayout";
+import WorkoutDashboard from "./components/WorkoutDashboard";
+import WorkoutCalendar from "./components/WorkoutCalendar";
+import WorkoutForm from "./components/WorkoutForm";
+import WorkoutList from "./components/WorkoutList";
 import LoginPage from "./pages/LoginPage";
-import { APP_VERSION } from "./config/version";
-
-// Version display component
-const VersionDisplay = () => {
-  return (
-    <div style={{ 
-      position: 'fixed', 
-      top: '10px', 
-      right: '10px', 
-      zIndex: 1000,
-      background: 'rgba(255, 255, 255, 0.9)',
-      padding: '4px 8px',
-      borderRadius: '4px',
-      fontSize: '12px',
-      color: '#666'
-    }}>
-      <Tag color="blue">v{APP_VERSION}</Tag>
-    </div>
-  );
-};
 
 function App() {
   return (
     <ConfigProvider locale={zhTW}>
       <BrowserRouter basename="/workout">
-        <VersionDisplay />
         <Refine
           dataProvider={firebaseDataProvider}
           authProvider={firebaseAuthProvider}
@@ -57,10 +40,6 @@ function App() {
           }}
         >
           <Routes>
-            {/* Redirect workout-calendar paths to root */}
-            <Route path="/workout-calendar" element={<Navigate to="/" replace />} />
-            <Route path="/workout-calendar/*" element={<Navigate to="/" replace />} />
-            
             {/* Main authenticated routes */}
             <Route
               element={
@@ -68,20 +47,25 @@ function App() {
                   key="authenticated-routes"
                   fallback={<LoginPage />}
                 >
-                  <Outlet />
+                  <WorkoutLayout />
                 </Authenticated>
               }
             >
-              <Route index element={<WorkoutPage />} />
-              <Route path="/" element={<WorkoutPage />} />
-              <Route path="/workouts" element={<WorkoutPage />} />
+              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<WorkoutDashboard />} />
+              <Route path="/calendar" element={<WorkoutCalendar />} />
+              <Route path="/add" element={<WorkoutForm mode="create" />} />
+              <Route path="/edit/:id" element={<WorkoutForm mode="edit" />} />
+              <Route path="/list" element={<WorkoutList />} />
+              {/* Legacy routes for backward compatibility */}
+              <Route path="/workouts" element={<Navigate to="/list" replace />} />
             </Route>
             
             {/* Login route */}
             <Route path="/login" element={<LoginPage />} />
             
             {/* Catch all route */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </Refine>
       </BrowserRouter>
