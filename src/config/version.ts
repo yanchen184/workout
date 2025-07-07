@@ -1,6 +1,6 @@
 // Application version configuration
 // Update this when you want to change the displayed version
-export const APP_VERSION = "1.10.0";
+export const APP_VERSION = "1.11.0";
 
 // Build timestamp (will be auto-updated during build)
 export const BUILD_TIMESTAMP = new Date().toISOString();
