@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Calendar, Badge, Card, Tag, Tooltip, Button, Space } from "antd";
 import { useList } from "@refinedev/core";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import dayjs, { Dayjs } from "dayjs";
 import { WorkoutRecord } from "../types";
 import { getMuscleGroupConfig } from "../config/muscleGroups";
@@ -8,17 +9,27 @@ import { auth } from "../config/firebase";
 import { getEffectiveCompletionStatus } from "../utils/dateUtils";
 import { ArrowUpOutlined, ArrowDownOutlined, LeftOutlined, RightOutlined } from "@ant-design/icons";
 
-interface WorkoutCalendarProps {
-  onDateSelect?: (date: string, existingWorkout?: WorkoutRecord) => void;
-}
-
-const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ onDateSelect }) => {
+const WorkoutCalendar: React.FC = () => {
   const [currentMonth, setCurrentMonth] = useState<Dayjs>(dayjs());
   const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null);
   const [isScrollingUp, setIsScrollingUp] = useState(false);
   const [showPreviousWeek, setShowPreviousWeek] = useState(false);
   const calendarRef = useRef<HTMLDivElement>(null);
   const currentUser = auth.currentUser;
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Handle URL parameters for date selection
+  useEffect(() => {
+    const dateParam = searchParams.get('date');
+    if (dateParam) {
+      const date = dayjs(dateParam);
+      if (date.isValid()) {
+        setSelectedDate(date);
+        setCurrentMonth(date);
+      }
+    }
+  }, [searchParams]);
 
   // Fetch workout records for current user - expand date range to cover multiple months
   const { data: workoutData, isLoading } = useList<WorkoutRecord>({
@@ -112,8 +123,12 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ onDateSelect }) => {
     const dateString = date.format("YYYY-MM-DD");
     const existingWorkout = workoutMap.get(dateString);
     
-    // Trigger callback for date selection
-    onDateSelect?.(dateString, existingWorkout);
+    // Navigate to add/edit page with date parameter
+    if (existingWorkout) {
+      navigate(`/edit/${existingWorkout.id}?date=${dateString}`);
+    } else {
+      navigate(`/add?date=${dateString}`);
+    }
   };
 
   // Render cell content for each date
@@ -292,16 +307,24 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ onDateSelect }) => {
       <Card 
         title="健身日曆" 
         loading={isLoading}
-        style={{ margin: "16px 0" }}
         extra={
-          <Button 
-            type="text" 
-            icon={showPreviousWeek ? <ArrowDownOutlined /> : <ArrowUpOutlined />}
-            size="small"
-            onClick={() => setShowPreviousWeek(!showPreviousWeek)}
-          >
-            {showPreviousWeek ? '隱藏' : '上一週'}
-          </Button>
+          <Space>
+            <Button 
+              type="text" 
+              icon={showPreviousWeek ? <ArrowDownOutlined /> : <ArrowUpOutlined />}
+              size="small"
+              onClick={() => setShowPreviousWeek(!showPreviousWeek)}
+            >
+              {showPreviousWeek ? '隱藏' : '上一週'}
+            </Button>
+            <Button 
+              type="primary"
+              size="small"
+              onClick={() => navigate('/add')}
+            >
+              新增訓練
+            </Button>
+          </Space>
         }
       >
         <Calendar
@@ -398,7 +421,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ onDateSelect }) => {
                 return (
                   <div>
                     <p style={{ color: "#1890ff", fontWeight: "bold" }}>
-                      📝 此日期已有訓練計劃 - 點擊「新增訓練」可以修改
+                      📝 此日期已有訓練計劃 - 點擊日期可以修改
                     </p>
                     <p>計劃訓練部位:</p>
                     <div>
@@ -432,7 +455,7 @@ const WorkoutCalendar: React.FC<WorkoutCalendarProps> = ({ onDateSelect }) => {
                 return (
                   <div>
                     <p style={{ color: "#52c41a", fontWeight: "bold" }}>
-                      ✨ 此日期無訓練計劃 - 點擊「新增訓練」可以建立新計劃
+                      ✨ 此日期無訓練計劃 - 點擊日期可以建立新計劃
                     </p>
                   </div>
                 );
