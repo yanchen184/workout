@@ -46,4 +46,4 @@ jobs:
           force_orphan: true
           user_name: 'github-actions[bot]'
           user_email: 'github-actions[bot]@users.noreply.github.com'
-          commit_message: 'Deploy v1.9.0 - ${{ github.event.head_commit.message }}'
+          commit_message: 'Deploy v1.0.2 - ${{ github.event.head_commit.message }}'
