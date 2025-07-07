@@ -1,17 +1,14 @@
 import React from "react";
 import { Form, Input, DatePicker, Button, Card, message, Row, Col, Switch, Select, InputNumber, Divider } from "antd";
-import { useCreate, useUpdate } from "@refinedev/core";
+import { useCreate, useUpdate, useOne } from "@refinedev/core";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import dayjs from "dayjs";
 import { WorkoutRecord, MuscleGroup } from "../types";
 import { auth } from "../config/firebase";
 import { deleteField } from "firebase/firestore";
 
 interface WorkoutFormProps {
-  initialValues?: Partial<WorkoutRecord>;
   mode: "create" | "edit";
-  onSuccess?: () => void;
-  selectedDate?: string;
-  existingWorkout?: WorkoutRecord; // Already existing workout record
 }
 
 // Muscle group display configuration with larger emojis and better visuals
@@ -76,18 +73,12 @@ const cardioTypesConfig = [
 
 const { Option } = Select;
 
-const WorkoutForm: React.FC<WorkoutFormProps> = ({
-  initialValues,
-  mode,
-  onSuccess,
-  selectedDate,
-  existingWorkout,
-}) => {
+const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
   const [form] = Form.useForm();
   const [selectedMuscleGroups, setSelectedMuscleGroups] = React.useState<MuscleGroup[]>([]);
   const [completed, setCompleted] = React.useState(false);
-  const [isRestDay, setIsRestDay] = React.useState(false); // Rest day toggle
-  const [hasCardio, setHasCardio] = React.useState(false); // Cardio training toggle
+  const [isRestDay, setIsRestDay] = React.useState(false);
+  const [hasCardio, setHasCardio] = React.useState(false);
   const [cardioDetails, setCardioDetails] = React.useState({
     type: '',
     duration: null as number | null,
@@ -95,20 +86,31 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({
     calories: null as number | null,
     notes: ''
   });
+
+  const navigate = useNavigate();
+  const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const currentUser = auth.currentUser;
 
   const { mutate: createWorkout, isLoading: createLoading } = useCreate();
   const { mutate: updateWorkout, isLoading: updateLoading } = useUpdate();
 
-  const isLoading = createLoading || updateLoading;
+  // Fetch existing workout for edit mode
+  const { data: workoutData, isLoading: fetchLoading } = useOne<WorkoutRecord>({
+    resource: "workouts",
+    id: id || "",
+    queryOptions: {
+      enabled: mode === "edit" && !!id,
+    },
+  });
 
-  // Determine if this is an update operation (either edit mode or existing workout)
-  const isUpdateMode = mode === "edit" || !!existingWorkout;
-  const targetWorkout = initialValues || existingWorkout;
+  const isLoading = createLoading || updateLoading || fetchLoading;
+  const existingWorkout = workoutData?.data;
+  const selectedDate = searchParams.get('date');
 
   // Handle muscle group selection
   const handleMuscleGroupClick = (muscleGroup: MuscleGroup) => {
-    if (isRestDay) return; // Can't select muscle groups on rest day
+    if (isRestDay) return;
 
     const newSelection = selectedMuscleGroups.includes(muscleGroup)
       ? selectedMuscleGroups.filter(mg => mg !== muscleGroup)
@@ -120,7 +122,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({
 
   // Handle rest day toggle
   const handleRestDayToggle = (checked: boolean) => {
-    // Can't enable rest day if cardio is active
     if (checked && hasCardio) {
       message.warning("有有氧運動時不能設為休息日，請先關閉有氧訓練");
       return;
@@ -128,10 +129,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({
 
     setIsRestDay(checked);
     if (checked) {
-      // Clear all muscle group selections on rest day
       setSelectedMuscleGroups([]);
       form.setFieldValue('muscleGroups', []);
-      // Rest day can still have cardio, don't clear cardio settings
     }
   };
 
@@ -139,10 +138,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({
   const handleCardioToggle = (checked: boolean) => {
     setHasCardio(checked);
     if (checked) {
-      // When enabling cardio, automatically disable rest day
       setIsRestDay(false);
     } else {
-      // Clear cardio data when turning off cardio training
       setCardioDetails({
         type: '',
         duration: null,
@@ -173,20 +170,11 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({
       return;
     }
 
-    console.log('Form submission:', {
-      isRestDay,
-      selectedMuscleGroups,
-      hasCardio,
-      cardioDetails
-    });
-
-    // Allow rest day, muscle groups, or cardio training (any combination)
     if (!isRestDay && selectedMuscleGroups.length === 0 && !hasCardio) {
       message.error("請選擇至少一個訓練部位、有氧訓練，或開啟休息日模式");
       return;
     }
 
-    // Check cardio training data
     if (hasCardio && !cardioDetails.type) {
       message.error("請選擇有氧訓練類型");
       return;
@@ -198,10 +186,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({
       date: values.date.format("YYYY-MM-DD"),
       muscleGroups: (() => {
         if (isRestDay) {
-          // Pure rest day - no cardio allowed in rest day logic anymore
           return [];
         } else {
-          // For training days, include selected muscle groups and cardio if applicable
           const groups = [...selectedMuscleGroups];
           if (hasCardio) {
             groups.push(MuscleGroup.CARDIO);
@@ -214,14 +200,12 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({
       isRestDay: isRestDay,
     };
 
-    // Handle cardioDetails properly for Firebase - absolutely no undefined values allowed
+    // Handle cardioDetails properly for Firebase
     if (hasCardio) {
-      // Clean cardioDetails to remove undefined values
       const cleanCardioDetails: any = {
-        type: cardioDetails.type || '' // Ensure never undefined
+        type: cardioDetails.type || ''
       };
 
-      // Only include fields that have actual values (not null/undefined)
       if (cardioDetails.duration !== null && cardioDetails.duration !== undefined) {
         cleanCardioDetails.duration = Number(cardioDetails.duration);
       }
@@ -236,31 +220,27 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({
       }
 
       workoutData.cardioDetails = cleanCardioDetails;
-    } else if (isUpdateMode && targetWorkout?.id) {
-      // For updates, use deleteField() to remove cardioDetails if not using cardio
+    } else if (mode === "edit" && existingWorkout?.id) {
       workoutData.cardioDetails = deleteField();
     }
-    // For new records without cardio, we simply don't include the field
 
     // Final safety check: remove any undefined values from the entire object
     const cleanWorkoutData = JSON.parse(JSON.stringify(workoutData, (_key, value) => {
       return value === undefined ? null : value;
     }));
 
-    console.log('Final workout data:', cleanWorkoutData);
-
-    if (isUpdateMode && targetWorkout?.id) {
+    if (mode === "edit" && existingWorkout?.id) {
       // Update existing record
       updateWorkout(
         {
           resource: "workouts",
-          id: targetWorkout.id,
+          id: existingWorkout.id,
           values: cleanWorkoutData,
         },
         {
           onSuccess: () => {
             message.success("訓練計劃更新成功！");
-            onSuccess?.();
+            navigate('/calendar');
           },
           onError: (error) => {
             console.error("更新失敗:", error);
@@ -290,7 +270,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({
               calories: null,
               notes: ''
             });
-            onSuccess?.();
+            navigate('/calendar');
           },
           onError: (error) => {
             console.error("創建失敗:", error);
@@ -303,26 +283,26 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({
 
   // Set initial form values
   React.useEffect(() => {
-    if (targetWorkout) {
-      // Edit mode or existing record - populate existing data
+    if (existingWorkout) {
+      // Edit mode - populate existing data
       form.setFieldsValue({
-        ...targetWorkout,
-        date: dayjs(targetWorkout.date),
-        notes: targetWorkout.notes || "",
+        ...existingWorkout,
+        date: dayjs(existingWorkout.date),
+        notes: existingWorkout.notes || "",
       });
-      const filteredMuscleGroups = (targetWorkout.muscleGroups || []).filter(mg => mg !== MuscleGroup.CARDIO);
+      const filteredMuscleGroups = (existingWorkout.muscleGroups || []).filter(mg => mg !== MuscleGroup.CARDIO);
       setSelectedMuscleGroups(filteredMuscleGroups);
-      setCompleted(targetWorkout.completed || false);
-      setIsRestDay((targetWorkout as any).isRestDay || false);
+      setCompleted(existingWorkout.completed || false);
+      setIsRestDay((existingWorkout as any).isRestDay || false);
 
       // Set cardio training status
-      const hasCardioInGroups = (targetWorkout.muscleGroups || []).includes(MuscleGroup.CARDIO);
-      const hasCardioDetails = !!(targetWorkout as any).cardioDetails;
+      const hasCardioInGroups = (existingWorkout.muscleGroups || []).includes(MuscleGroup.CARDIO);
+      const hasCardioDetails = !!(existingWorkout as any).cardioDetails;
       const shouldHaveCardio = hasCardioInGroups || hasCardioDetails;
 
       setHasCardio(shouldHaveCardio);
-      if (shouldHaveCardio && (targetWorkout as any).cardioDetails) {
-        const existingCardio = (targetWorkout as any).cardioDetails;
+      if (shouldHaveCardio && (existingWorkout as any).cardioDetails) {
+        const existingCardio = (existingWorkout as any).cardioDetails;
         setCardioDetails({
           type: existingCardio.type || '',
           duration: existingCardio.duration || null,
@@ -332,7 +312,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({
         });
       }
     } else if (selectedDate) {
-      // New mode - set selected date
+      // New mode with selected date
       form.setFieldsValue({
         date: dayjs(selectedDate),
         notes: "",
@@ -341,12 +321,18 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({
       setCompleted(false);
       setIsRestDay(false);
       setHasCardio(false);
+    } else {
+      // New mode without selected date
+      form.setFieldsValue({
+        date: dayjs(),
+        notes: "",
+      });
     }
-  }, [targetWorkout, selectedDate, form]);
+  }, [existingWorkout, selectedDate, form]);
 
   const getTitle = () => {
-    if (isUpdateMode) {
-      return existingWorkout ? "修改訓練計劃" : "編輯訓練記錄";
+    if (mode === "edit") {
+      return "編輯訓練記錄";
     }
     return "新增訓練計劃";
   };
@@ -354,7 +340,14 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({
   return (
     <Card
       title={getTitle()}
-      style={{ margin: "16px 0" }}
+      extra={
+        <Button 
+          onClick={() => navigate('/calendar')}
+          type="text"
+        >
+          返回日曆
+        </Button>
+      }
     >
       <Form
         form={form}
@@ -726,7 +719,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({
               borderRadius: "8px"
             }}
           >
-            {isUpdateMode
+            {mode === "edit"
               ? (isRestDay ? "📝 更新休息計劃" : "📝 更新訓練計劃")
               : (isRestDay ? "🚀 創建休息計劃" : "🚀 創建訓練計劃")
             }
