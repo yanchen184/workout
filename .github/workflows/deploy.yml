@@ -10,13 +10,25 @@ permissions:
   contents: write
   pages: write
   id-token: write
+  actions: write
+  deployments: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -27,12 +39,43 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build
+      - name: Build application
         env:
           CI: false
+          NODE_ENV: production
         run: npm run build
 
-      - name: Deploy to gh-pages branch
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: './dist'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
+
+      - name: Create gh-pages branch if not exists
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          
+          # Check if gh-pages branch exists
+          if ! git ls-remote --heads origin gh-pages | grep gh-pages; then
+            echo "Creating gh-pages branch..."
+            git checkout --orphan gh-pages
+            git rm -rf .
+            echo "# GitHub Pages Branch" > README.md
+            git add README.md
+            git commit -m "Initial gh-pages branch"
+            git push origin gh-pages
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy to gh-pages branch (alternative method)
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -41,4 +84,4 @@ jobs:
           force_orphan: true
           user_name: 'github-actions[bot]'
           user_email: 'github-actions[bot]@users.noreply.github.com'
-          commit_message: 'Deploy v1.0.3 - ${{ github.event.head_commit.message }}'
+          commit_message: 'Deploy v1.0.4 - ${{ github.event.head_commit.message }}'
