@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Layout, Menu, Button, Typography, Space } from "antd";
+import { Layout, Menu, Button, Typography, Space, Tag } from "antd";
 import { 
   CalendarOutlined, 
   PlusOutlined, 
@@ -15,6 +15,9 @@ import { Outlet, useNavigate, useLocation } from "react-router-dom";
 
 const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;
+
+// Import version from package.json
+const APP_VERSION = "1.0.2";
 
 const WorkoutLayout: React.FC = () => {
   const [siderCollapsed, setSiderCollapsed] = useState(false);
@@ -231,6 +234,11 @@ const WorkoutLayout: React.FC = () => {
           </Space>
           
           <Space>
+            {/* Version tag */}
+            <Tag color="blue" style={{ fontSize: '11px', margin: 0 }}>
+              v{APP_VERSION}
+            </Tag>
+            
             <Space align="center">
               <UserOutlined />
               <Text style={{ 
