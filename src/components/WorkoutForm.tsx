@@ -163,121 +163,160 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
     return cardioTypesConfig.find(config => config.value === cardioDetails.type);
   };
 
+  // Clean data for Firebase (remove undefined values and handle deleteField)
+  const cleanDataForFirebase = (data: any) => {
+    const cleaned: any = {};
+    
+    for (const [key, value] of Object.entries(data)) {
+      if (value !== undefined && value !== null) {
+        if (typeof value === 'object' && value.constructor === Object) {
+          // Recursively clean nested objects
+          const cleanedNestedObject = cleanDataForFirebase(value);
+          if (Object.keys(cleanedNestedObject).length > 0) {
+            cleaned[key] = cleanedNestedObject;
+          }
+        } else {
+          cleaned[key] = value;
+        }
+      } else if (value === deleteField()) {
+        // Special case for deleteField
+        cleaned[key] = value;
+      }
+    }
+    
+    return cleaned;
+  };
+
   // Handle form submission
   const onFinish = async (values: any) => {
-    if (!currentUser) {
-      message.error("請先登入");
-      return;
-    }
+    try {
+      // Validation checks
+      if (!currentUser) {
+        message.error("請先登入");
+        return;
+      }
 
-    if (!isRestDay && selectedMuscleGroups.length === 0 && !hasCardio) {
-      message.error("請選擇至少一個訓練部位、有氧訓練，或開啟休息日模式");
-      return;
-    }
+      if (!isRestDay && selectedMuscleGroups.length === 0 && !hasCardio) {
+        message.error("請選擇至少一個訓練部位、有氧訓練，或開啟休息日模式");
+        return;
+      }
 
-    if (hasCardio && !cardioDetails.type) {
-      message.error("請選擇有氧訓練類型");
-      return;
-    }
+      if (hasCardio && !cardioDetails.type) {
+        message.error("請選擇有氧訓練類型");
+        return;
+      }
 
-    const workoutData: any = {
-      ...values,
-      userId: currentUser.uid,
-      date: values.date.format("YYYY-MM-DD"),
-      muscleGroups: (() => {
-        if (isRestDay) {
-          return [];
-        } else {
-          const groups = [...selectedMuscleGroups];
-          if (hasCardio) {
-            groups.push(MuscleGroup.CARDIO);
+      // Prepare base workout data
+      const baseWorkoutData = {
+        userId: currentUser.uid,
+        date: values.date.format("YYYY-MM-DD"),
+        muscleGroups: (() => {
+          if (isRestDay) {
+            return [];
+          } else {
+            const groups = [...selectedMuscleGroups];
+            if (hasCardio) {
+              groups.push(MuscleGroup.CARDIO);
+            }
+            return groups;
           }
-          return groups;
-        }
-      })(),
-      completed: completed,
-      notes: values.notes || "",
-      isRestDay: isRestDay,
-    };
-
-    // Handle cardioDetails properly for Firebase
-    if (hasCardio) {
-      const cleanCardioDetails: any = {
-        type: cardioDetails.type || ''
+        })(),
+        completed: completed,
+        notes: values.notes || "",
+        isRestDay: isRestDay,
       };
 
-      if (cardioDetails.duration !== null && cardioDetails.duration !== undefined) {
-        cleanCardioDetails.duration = Number(cardioDetails.duration);
-      }
-      if (cardioDetails.distance !== null && cardioDetails.distance !== undefined) {
-        cleanCardioDetails.distance = Number(cardioDetails.distance);
-      }
-      if (cardioDetails.calories !== null && cardioDetails.calories !== undefined) {
-        cleanCardioDetails.calories = Number(cardioDetails.calories);
-      }
-      if (cardioDetails.notes && typeof cardioDetails.notes === 'string' && cardioDetails.notes.trim() !== '') {
-        cleanCardioDetails.notes = cardioDetails.notes.trim();
-      }
+      // Handle cardio details
+      let workoutData = { ...baseWorkoutData };
 
-      workoutData.cardioDetails = cleanCardioDetails;
-    } else if (mode === "edit" && existingWorkout?.id) {
-      workoutData.cardioDetails = deleteField();
-    }
+      if (hasCardio && cardioDetails.type) {
+        const cardioData: any = {
+          type: cardioDetails.type
+        };
 
-    // Final safety check: remove any undefined values from the entire object
-    const cleanWorkoutData = JSON.parse(JSON.stringify(workoutData, (_key, value) => {
-      return value === undefined ? null : value;
-    }));
-
-    if (mode === "edit" && existingWorkout?.id) {
-      // Update existing record
-      updateWorkout(
-        {
-          resource: "workouts",
-          id: existingWorkout.id,
-          values: cleanWorkoutData,
-        },
-        {
-          onSuccess: () => {
-            message.success("訓練計劃更新成功！");
-            navigate('/calendar');
-          },
-          onError: (error) => {
-            console.error("更新失敗:", error);
-            message.error("更新失敗，請重試");
-          },
+        // Only add numeric fields if they have valid values
+        if (typeof cardioDetails.duration === 'number' && cardioDetails.duration > 0) {
+          cardioData.duration = cardioDetails.duration;
         }
-      );
-    } else {
-      // Create new record
-      createWorkout(
-        {
-          resource: "workouts",
-          values: cleanWorkoutData,
-        },
-        {
-          onSuccess: () => {
-            message.success("訓練計劃創建成功！");
-            form.resetFields();
-            setSelectedMuscleGroups([]);
-            setCompleted(false);
-            setIsRestDay(false);
-            setHasCardio(false);
-            setCardioDetails({
-              type: '',
-              duration: null,
-              distance: null,
-              calories: null,
-              notes: ''
-            });
-            navigate('/calendar');
-          },
-          onError: (error) => {
-            console.error("創建失敗:", error);
-            message.error("創建失敗，請重試");
-          },
+        if (typeof cardioDetails.distance === 'number' && cardioDetails.distance > 0) {
+          cardioData.distance = cardioDetails.distance;
         }
-      );
+        if (typeof cardioDetails.calories === 'number' && cardioDetails.calories > 0) {
+          cardioData.calories = cardioDetails.calories;
+        }
+        if (cardioDetails.notes && cardioDetails.notes.trim().length > 0) {
+          cardioData.notes = cardioDetails.notes.trim();
+        }
+
+        workoutData.cardioDetails = cardioData;
+      } else if (mode === "edit" && existingWorkout?.id) {
+        // For edit mode, explicitly delete cardioDetails if no cardio
+        workoutData.cardioDetails = deleteField();
+      }
+
+      // Clean the data
+      const cleanedData = cleanDataForFirebase(workoutData);
+
+      console.log("Submitting workout data:", cleanedData); // Debug log
+
+      if (mode === "edit" && existingWorkout?.id) {
+        // Update existing record
+        updateWorkout(
+          {
+            resource: "workouts",
+            id: existingWorkout.id,
+            values: cleanedData,
+          },
+          {
+            onSuccess: (data) => {
+              console.log("Update success:", data); // Debug log
+              message.success("訓練計劃更新成功！");
+              navigate('/calendar');
+            },
+            onError: (error) => {
+              console.error("Update error:", error); // Debug log
+              message.error(`更新失敗：${error.message || "請重試"}`);
+            },
+          }
+        );
+      } else {
+        // Create new record
+        createWorkout(
+          {
+            resource: "workouts",
+            values: cleanedData,
+          },
+          {
+            onSuccess: (data) => {
+              console.log("Create success:", data); // Debug log
+              message.success("訓練計劃創建成功！");
+              
+              // Reset form
+              form.resetFields();
+              setSelectedMuscleGroups([]);
+              setCompleted(false);
+              setIsRestDay(false);
+              setHasCardio(false);
+              setCardioDetails({
+                type: '',
+                duration: null,
+                distance: null,
+                calories: null,
+                notes: ''
+              });
+              
+              navigate('/calendar');
+            },
+            onError: (error) => {
+              console.error("Create error:", error); // Debug log
+              message.error(`創建失敗：${error.message || "請重試"}`);
+            },
+          }
+        );
+      }
+    } catch (error) {
+      console.error("Form submission error:", error); // Debug log
+      message.error("提交失敗，請檢查輸入並重試");
     }
   };
 
