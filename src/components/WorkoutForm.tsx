@@ -11,6 +11,17 @@ interface WorkoutFormProps {
   mode: "create" | "edit";
 }
 
+// Define interface for workout data with cardio details
+interface WorkoutData {
+  userId: string;
+  date: string;
+  muscleGroups: MuscleGroup[];
+  completed: boolean;
+  notes: string;
+  isRestDay: boolean;
+  cardioDetails?: any;
+}
+
 // Muscle group display configuration with larger emojis and better visuals
 const muscleGroupsConfig = [
   {
@@ -178,8 +189,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
         } else {
           cleaned[key] = value;
         }
-      } else if (value === deleteField()) {
-        // Special case for deleteField
+      } else if (typeof value === 'object' && value !== null && 'isEqual' in value) {
+        // Special case for deleteField and other Firestore special values
         cleaned[key] = value;
       }
     }
@@ -207,7 +218,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
       }
 
       // Prepare base workout data
-      const baseWorkoutData = {
+      const baseWorkoutData: WorkoutData = {
         userId: currentUser.uid,
         date: values.date.format("YYYY-MM-DD"),
         muscleGroups: (() => {
@@ -227,7 +238,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
       };
 
       // Handle cardio details
-      let workoutData = { ...baseWorkoutData };
+      let workoutData: WorkoutData = { ...baseWorkoutData };
 
       if (hasCardio && cardioDetails.type) {
         const cardioData: any = {
@@ -251,7 +262,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
         workoutData.cardioDetails = cardioData;
       } else if (mode === "edit" && existingWorkout?.id) {
         // For edit mode, explicitly delete cardioDetails if no cardio
-        workoutData.cardioDetails = deleteField();
+        workoutData.cardioDetails = deleteField() as any;
       }
 
       // Clean the data
