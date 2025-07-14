@@ -8,14 +8,17 @@ import { firebaseAuthProvider } from "./providers/authProvider";
 import WorkoutLayout from "./components/WorkoutLayout";
 import WorkoutDashboard from "./components/WorkoutDashboard";
 import WorkoutCalendar from "./components/WorkoutCalendar";
-import WorkoutForm from "./components/WorkoutForm";
 import WorkoutList from "./components/WorkoutList";
+import { CreateWorkoutPlan } from "./pages/workout";
 import LoginPage from "./pages/LoginPage";
 
 function App() {
+  // Use different basename for development and production
+  const basename = import.meta.env.DEV ? '/' : '/workout';
+  
   return (
     <ConfigProvider locale={zhTW}>
-      <BrowserRouter basename="/workout">
+      <BrowserRouter basename={basename}>
         <Refine
           dataProvider={firebaseDataProvider}
           authProvider={firebaseAuthProvider}
@@ -55,8 +58,8 @@ function App() {
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<WorkoutDashboard />} />
               <Route path="calendar" element={<WorkoutCalendar />} />
-              <Route path="add" element={<WorkoutForm mode="create" />} />
-              <Route path="edit/:id" element={<WorkoutForm mode="edit" />} />
+              <Route path="create-plan" element={<CreateWorkoutPlan mode="create" />} />
+              <Route path="edit/:id" element={<CreateWorkoutPlan mode="edit" />} />
               <Route path="list" element={<WorkoutList />} />
               {/* Legacy routes for backward compatibility */}
               <Route path="workouts" element={<Navigate to="/list" replace />} />

@@ -123,11 +123,11 @@ const WorkoutCalendar: React.FC = () => {
     const dateString = date.format("YYYY-MM-DD");
     const existingWorkout = workoutMap.get(dateString);
     
-    // Navigate to add/edit page with date parameter
+    // Navigate to create-plan/edit page with date parameter
     if (existingWorkout) {
       navigate(`/edit/${existingWorkout.id}?date=${dateString}`);
     } else {
-      navigate(`/add?date=${dateString}`);
+      navigate(`/create-plan?date=${dateString}`);
     }
   };
 

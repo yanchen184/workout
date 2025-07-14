@@ -16,8 +16,8 @@ import { Outlet, useNavigate, useLocation } from "react-router-dom";
 const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;
 
-// Import version from package.json - Updated to v1.0.7
-const APP_VERSION = "1.0.7";
+// Import version from package.json - Updated to v1.13.0
+const APP_VERSION = "1.13.0";
 
 const WorkoutLayout: React.FC = () => {
   const [siderCollapsed, setSiderCollapsed] = useState(false);
@@ -49,7 +49,7 @@ const WorkoutLayout: React.FC = () => {
     const path = location.pathname;
     if (path.includes('/dashboard')) return 'dashboard';
     if (path.includes('/calendar')) return 'calendar';
-    if (path.includes('/add') || path.includes('/edit')) return 'add';
+    if (path.includes('/create-plan') || path.includes('/edit')) return 'create-plan';
     if (path.includes('/list')) return 'list';
     return 'dashboard';
   };
@@ -72,8 +72,8 @@ const WorkoutLayout: React.FC = () => {
         return '數據儀表板';
       case 'calendar':
         return '健身日曆';
-      case 'add':
-        return location.pathname.includes('/edit') ? '編輯訓練' : '新增訓練';
+      case 'create-plan':
+        return location.pathname.includes('/edit') ? '編輯訓練計劃' : '創建訓練計劃';
       case 'list':
         return '訓練記錄';
       default:
@@ -93,9 +93,10 @@ const WorkoutLayout: React.FC = () => {
       label: '健身日曆',
     },
     {
-      key: 'add',
+      key: 'create-plan',
       icon: <PlusOutlined />,
-      label: '新增訓練',
+      label: '創建計劃',
+      style: { color: '#52c41a' }, // Green color for create action
     },
     {
       key: 'list',

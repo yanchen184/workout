@@ -1,10 +1,10 @@
-import React from "react";
-import { Form, Input, DatePicker, Button, Card, message, Row, Col, Switch, Select, InputNumber, Divider } from "antd";
+import React, { useState, useEffect } from "react";
+import { Form, Input, DatePicker, Button, Card, message, Switch, Select, InputNumber, Row, Col, Divider } from "antd";
 import { useCreate, useUpdate, useOne } from "@refinedev/core";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import dayjs from "dayjs";
-import { WorkoutRecord, MuscleGroup } from "../types";
-import { auth } from "../config/firebase";
+import { WorkoutRecord, MuscleGroup } from "../../types";
+import { auth } from "../../config/firebase";
 import { deleteField } from "firebase/firestore";
 
 interface WorkoutFormProps {
@@ -84,13 +84,13 @@ const cardioTypesConfig = [
 
 const { Option } = Select;
 
-const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
+const ImprovedWorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
   const [form] = Form.useForm();
-  const [selectedMuscleGroups, setSelectedMuscleGroups] = React.useState<MuscleGroup[]>([]);
-  const [completed, setCompleted] = React.useState(false);
-  const [isRestDay, setIsRestDay] = React.useState(false);
-  const [hasCardio, setHasCardio] = React.useState(false);
-  const [cardioDetails, setCardioDetails] = React.useState({
+  const [selectedMuscleGroups, setSelectedMuscleGroups] = useState<MuscleGroup[]>([]);
+  const [completed, setCompleted] = useState(false);
+  const [isRestDay, setIsRestDay] = useState(false);
+  const [hasCardio, setHasCardio] = useState(false);
+  const [cardioDetails, setCardioDetails] = useState({
     type: '',
     duration: null as number | null,
     distance: null as number | null,
@@ -119,19 +119,16 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
   const existingWorkout = workoutData?.data;
   const selectedDate = searchParams.get('date');
 
-  // Handle muscle group selection
-  const handleMuscleGroupClick = (muscleGroup: MuscleGroup) => {
+  // Handle muscle group selection - simplified to avoid circular references
+  const handleMuscleGroupToggle = (muscleGroup: MuscleGroup) => {
     if (isRestDay) return;
 
-    const newSelection = selectedMuscleGroups.includes(muscleGroup)
-      ? selectedMuscleGroups.filter(mg => mg !== muscleGroup)
-      : [...selectedMuscleGroups, muscleGroup];
-
-    setSelectedMuscleGroups(newSelection);
-    // Use setTimeout to avoid circular reference issues
-    setTimeout(() => {
-      form.setFieldValue('muscleGroups', newSelection);
-    }, 0);
+    setSelectedMuscleGroups(prev => {
+      const newSelection = prev.includes(muscleGroup)
+        ? prev.filter(mg => mg !== muscleGroup)
+        : [...prev, muscleGroup];
+      return newSelection;
+    });
   };
 
   // Handle rest day toggle
@@ -144,10 +141,6 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
     setIsRestDay(checked);
     if (checked) {
       setSelectedMuscleGroups([]);
-      // Use setTimeout to avoid circular reference issues
-      setTimeout(() => {
-        form.setFieldValue('muscleGroups', []);
-      }, 0);
     }
   };
 
@@ -180,36 +173,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
     return cardioTypesConfig.find(config => config.value === cardioDetails.type);
   };
 
-  // Clean data for Firebase (remove undefined values and handle deleteField)
-  const cleanDataForFirebase = (data: any) => {
-    const cleaned: any = {};
-    
-    for (const [key, value] of Object.entries(data)) {
-      if (value !== undefined && value !== null) {
-        if (Array.isArray(value)) {
-          // Handle arrays
-          cleaned[key] = value;
-        } else if (typeof value === 'object' && value.constructor === Object) {
-          // Recursively clean nested objects
-          const cleanedNestedObject = cleanDataForFirebase(value);
-          if (Object.keys(cleanedNestedObject).length > 0) {
-            cleaned[key] = cleanedNestedObject;
-          }
-        } else {
-          cleaned[key] = value;
-        }
-      } else if (value && typeof value === 'object' && value.constructor && value.constructor.name === 'FieldValue') {
-        // Special case for deleteField and other Firestore special values
-        cleaned[key] = value;
-      }
-    }
-    
-    return cleaned;
-  };
-
   // Handle form submission
   const onFinish = async (values: any) => {
-    console.log('Form submission started with values:', values); // Debug log
+    console.log('Improved form submission started with values:', values);
     
     try {
       // Validation checks
@@ -228,7 +194,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
         return;
       }
 
-      console.log('Validation passed, proceeding with submission...'); // Debug log
+      console.log('Validation passed, proceeding with submission...');
 
       // Prepare base workout data
       const baseWorkoutData: WorkoutData = {
@@ -278,10 +244,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
         workoutData.cardioDetails = deleteField() as any;
       }
 
-      // Clean the data
-      const cleanedData = cleanDataForFirebase(workoutData);
-
-      console.log("Submitting workout data:", cleanedData); // Debug log
+      console.log("Submitting improved workout data:", workoutData);
 
       if (mode === "edit" && existingWorkout?.id) {
         // Update existing record
@@ -289,19 +252,16 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
           {
             resource: "workouts",
             id: existingWorkout.id,
-            values: cleanedData,
+            values: workoutData,
           },
           {
             onSuccess: (data) => {
-              console.log("Update success:", data); // Debug log
+              console.log("Update success:", data);
               message.success("訓練計劃更新成功！");
-              // Navigate to calendar
-              setTimeout(() => {
-                navigate('/calendar');
-              }, 500);
+              navigate('/calendar');
             },
             onError: (error) => {
-              console.error("Update error:", error); // Debug log
+              console.error("Update error:", error);
               const errorMessage = error?.message || error?.toString() || 'Unknown error';
               message.error(`更新失敗：${errorMessage}`);
             },
@@ -312,11 +272,11 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
         createWorkout(
           {
             resource: "workouts",
-            values: cleanedData,
+            values: workoutData,
           },
           {
             onSuccess: (data) => {
-              console.log("Create success:", data); // Debug log
+              console.log("Create success:", data);
               message.success("訓練計劃創建成功！");
               
               // Reset form
@@ -333,13 +293,10 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
                 notes: ''
               });
               
-              // Navigate to calendar
-              setTimeout(() => {
-                navigate('/calendar');
-              }, 500);
+              navigate('/calendar');
             },
             onError: (error) => {
-              console.error("Create error:", error); // Debug log
+              console.error("Create error:", error);
               const errorMessage = error?.message || error?.toString() || 'Unknown error';
               message.error(`創建失敗：${errorMessage}`);
             },
@@ -347,14 +304,14 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
         );
       }
     } catch (error) {
-      console.error("Form submission error:", error); // Debug log
+      console.error("Form submission error:", error);
       const errorMessage = error instanceof Error ? error.message : '未知錯誤';
       message.error(`提交失敗：${errorMessage}，請重試`);
     }
   };
 
   // Set initial form values
-  React.useEffect(() => {
+  useEffect(() => {
     if (existingWorkout) {
       // Edit mode - populate existing data
       form.setFieldsValue({
@@ -406,7 +363,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
     if (mode === "edit") {
       return "編輯訓練記錄";
     }
-    return "新增訓練計劃";
+    return "改進版本 - 新增訓練計劃";
   };
 
   return (
@@ -445,48 +402,45 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
 
         {/* Rest day toggle */}
         <Form.Item label="訓練類型">
-          <Card
-          size="small"
-          style={{
-          border: isRestDay ? "2px solid #52c41a" : "2px solid #d9d9d9",
-          backgroundColor: isRestDay ? "#f6ffed" : "#fafafa",
-          borderRadius: "8px"
-          }}
-          styles={{ body: { padding: "12px 16px" } }}
-          >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", alignItems: "center" }}>
+          <div style={{
+            padding: "12px 16px",
+            border: isRestDay ? "2px solid #52c41a" : "2px solid #d9d9d9",
+            backgroundColor: isRestDay ? "#f6ffed" : "#fafafa",
+            borderRadius: "8px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between"
+          }}>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <div style={{
+                fontSize: "20px",
+                marginRight: "12px"
+              }}>
+                {isRestDay ? "😴" : "💪"}
+              </div>
+              <div>
                 <div style={{
-                  fontSize: "20px",
-                  marginRight: "12px"
+                  fontWeight: "bold",
+                  color: isRestDay ? "#52c41a" : "#666"
                 }}>
-                  {isRestDay ? "😴" : "💪"}
+                  {isRestDay ? "休息日" : "訓練日"}
                 </div>
-                <div>
-                  <div style={{
-                    fontWeight: "bold",
-                    color: isRestDay ? "#52c41a" : "#666"
-                  }}>
-                    {isRestDay ? "休息日" : "訓練日"}
-                  </div>
-                  <div style={{ fontSize: "12px", color: "#999" }}>
-                    {isRestDay ? "今天不練習，好好休息" : "選擇要訓練的部位"}
-                  </div>
+                <div style={{ fontSize: "12px", color: "#999" }}>
+                  {isRestDay ? "今天不練習，好好休息" : "選擇要訓練的部位"}
                 </div>
               </div>
-              <Switch
-                checked={isRestDay}
-                onChange={handleRestDayToggle}
-                checkedChildren="休息"
-                unCheckedChildren="訓練"
-              />
             </div>
-          </Card>
+            <Switch
+              checked={isRestDay}
+              onChange={handleRestDayToggle}
+              checkedChildren="休息"
+              unCheckedChildren="訓練"
+            />
+          </div>
         </Form.Item>
 
         {!isRestDay && (
           <Form.Item
-            name="muscleGroups"
             label={
               <div style={{ fontSize: "16px", fontWeight: "bold", marginBottom: "12px" }}>
                 訓練部位 {selectedMuscleGroups.length > 0 && (
@@ -502,9 +456,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
                 const isSelected = selectedMuscleGroups.includes(muscle.key);
                 return (
                   <Col xs={12} sm={8} md={6} key={muscle.key}>
-                    <Card
-                      hoverable
-                      size="small"
+                    <div
                       style={{
                         textAlign: "center",
                         cursor: "pointer",
@@ -520,18 +472,11 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
                         display: "flex",
                         flexDirection: "column",
                         justifyContent: "center",
+                        padding: "16px 8px",
+                        position: "relative",
                         opacity: isRestDay ? 0.5 : 1,
                       }}
-                      onClick={() => handleMuscleGroupClick(muscle.key)}
-                      styles={{
-                        body: {
-                          padding: "16px 8px",
-                          display: "flex",
-                          flexDirection: "column",
-                          justifyContent: "center",
-                          height: "100%"
-                        }
-                      }}
+                      onClick={() => handleMuscleGroupToggle(muscle.key)}
                     >
                       <div style={{
                         fontSize: "36px",
@@ -574,7 +519,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
                           ✓
                         </div>
                       )}
-                    </Card>
+                    </div>
                   </Col>
                 );
               })}
@@ -585,15 +530,12 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
         {/* Cardio training section - only show when not rest day */}
         {!isRestDay && (
           <Form.Item label="有氧訓練">
-            <Card
-              size="small"
-              style={{
-                border: hasCardio ? "2px solid #ff7a45" : "2px solid #d9d9d9",
-                backgroundColor: hasCardio ? "#fff7e6" : "#fafafa",
-                borderRadius: "8px"
-              }}
-              styles={{ body: { padding: "12px 16px" } }}
-            >
+            <div style={{
+              padding: "12px 16px",
+              border: hasCardio ? "2px solid #ff7a45" : "2px solid #d9d9d9",
+              backgroundColor: hasCardio ? "#fff7e6" : "#fafafa",
+              borderRadius: "8px"
+            }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: hasCardio ? "16px" : "0" }}>
                 <div style={{ display: "flex", alignItems: "center" }}>
                   <div style={{
@@ -706,7 +648,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
                   )}
                 </div>
               )}
-            </Card>
+            </div>
           </Form.Item>
         )}
 
@@ -728,55 +670,51 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
         </Form.Item>
 
         <Form.Item label="完成狀態">
-          <Card
-            size="small"
-            style={{
-              cursor: "pointer",
-              border: completed ? "2px solid #52c41a" : "2px solid #d9d9d9",
-              backgroundColor: completed ? "#f6ffed" : "#fafafa",
-              borderRadius: "8px"
-            }}
-            onClick={() => {
-              setCompleted(!completed);
-            }}
-            styles={{ body: { padding: "12px 16px" } }}
-          >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <div style={{
-                  fontSize: "20px",
-                  marginRight: "12px"
-                }}>
-                  {completed ? "✅" : "⏳"}
-                </div>
-                <div>
-                  <div style={{
-                    fontWeight: "bold",
-                    color: completed ? "#52c41a" : "#666"
-                  }}>
-                    {completed ? (isRestDay ? "已休息" : "已完成訓練") : (isRestDay ? "計劃休息" : "計劃中")}
-                  </div>
-                  <div style={{ fontSize: "12px", color: "#999" }}>
-                    {completed ? "太棒了！繼續保持" : "點擊標記為已完成"}
-                  </div>
-                </div>
-              </div>
+          <div style={{
+            cursor: "pointer",
+            border: completed ? "2px solid #52c41a" : "2px solid #d9d9d9",
+            backgroundColor: completed ? "#f6ffed" : "#fafafa",
+            borderRadius: "8px",
+            padding: "12px 16px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between"
+          }}
+          onClick={() => setCompleted(!completed)}>
+            <div style={{ display: "flex", alignItems: "center" }}>
               <div style={{
-                width: "24px",
-                height: "24px",
-                borderRadius: "50%",
-                backgroundColor: completed ? "#52c41a" : "#d9d9d9",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "white",
-                fontSize: "12px",
-                fontWeight: "bold"
+                fontSize: "20px",
+                marginRight: "12px"
               }}>
-                {completed ? "✓" : ""}
+                {completed ? "✅" : "⏳"}
+              </div>
+              <div>
+                <div style={{
+                  fontWeight: "bold",
+                  color: completed ? "#52c41a" : "#666"
+                }}>
+                  {completed ? (isRestDay ? "已休息" : "已完成訓練") : (isRestDay ? "計劃休息" : "計劃中")}
+                </div>
+                <div style={{ fontSize: "12px", color: "#999" }}>
+                  {completed ? "太棒了！繼續保持" : "點擊標記為已完成"}
+                </div>
               </div>
             </div>
-          </Card>
+            <div style={{
+              width: "24px",
+              height: "24px",
+              borderRadius: "50%",
+              backgroundColor: completed ? "#52c41a" : "#d9d9d9",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "white",
+              fontSize: "12px",
+              fontWeight: "bold"
+            }}>
+              {completed ? "✓" : ""}
+            </div>
+          </div>
         </Form.Item>
 
         <Form.Item style={{ marginTop: "24px" }}>
@@ -808,4 +746,4 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
   );
 };
 
-export default WorkoutForm;
+export default ImprovedWorkoutForm;

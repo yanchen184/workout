@@ -104,22 +104,41 @@ export const firebaseDataProvider: DataProvider = {
 
   // Create new resource
   create: async <TData extends BaseRecord = BaseRecord, TVariables = {}>({ resource, variables }: CreateParams<TVariables>): Promise<CreateResponse<TData>> => {
-    const collectionRef = collection(db, resource);
-    const now = new Date();
-    const docRef = await addDoc(collectionRef, {
-      ...variables,
-      createdAt: now,
-      updatedAt: now,
-    });
-
-    return {
-      data: {
-        id: docRef.id,
-        ...variables,
+    try {
+      console.log('Creating document with variables:', variables); // Debug log
+      
+      const collectionRef = collection(db, resource);
+      const now = new Date();
+      
+      // Clean the variables object to remove any undefined values or special Firestore objects
+      const cleanVariables = JSON.parse(JSON.stringify(variables, (key, value) => {
+        // Handle special Firestore objects
+        if (value && typeof value === 'object' && value.constructor && value.constructor.name === 'FieldValue') {
+          return value; // Keep Firestore special values as-is
+        }
+        return value;
+      }));
+      
+      const docRef = await addDoc(collectionRef, {
+        ...cleanVariables,
         createdAt: now,
         updatedAt: now,
-      } as unknown as TData,
-    };
+      });
+
+      console.log('Document created with ID:', docRef.id); // Debug log
+
+      return {
+        data: {
+          id: docRef.id,
+          ...cleanVariables,
+          createdAt: now,
+          updatedAt: now,
+        } as unknown as TData,
+      };
+    } catch (error) {
+      console.error('Error creating document:', error); // Debug log
+      throw error;
+    }
   },
 
   // Update existing resource

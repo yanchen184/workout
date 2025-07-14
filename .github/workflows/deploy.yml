@@ -42,5 +42,5 @@ jobs:
           force_orphan: true
           user_name: 'yanchen184'
           user_email: '62279165+yanchen184@users.noreply.github.com'
-          commit_message: 'Deploy v1.0.7 - ${{ github.event.head_commit.message }}'
+          commit_message: 'Deploy v1.13.0 - ${{ github.event.head_commit.message }}'
           enable_jekyll: false
