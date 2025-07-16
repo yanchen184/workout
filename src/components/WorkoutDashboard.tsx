@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { Card, Row, Col, Tag, Space, Alert, Button, Modal, Slider, message } from "antd";
 import { SettingOutlined } from "@ant-design/icons";
-import { useList } from "@refinedev/core";
+import { useList, useCreate } from "@refinedev/core";
+import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { WorkoutRecord, MuscleGroup } from "../types";
@@ -35,9 +36,11 @@ interface RestDay {
 
 const WorkoutDashboard: React.FC = () => {
   const currentUser = auth.currentUser;
+  const navigate = useNavigate();
   const { getSetting, updateSetting } = useSettings();
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
   const [restDayWarning, setRestDayWarning] = useState(getSetting(SettingKey.REST_DAY_WARNING));
+  const { mutate: createWorkout, isLoading: createLoading } = useCreate();
 
   // Fetch workout records for statistics
   const { data: workoutData, isLoading } = useList<WorkoutRecord>({
@@ -272,6 +275,61 @@ const WorkoutDashboard: React.FC = () => {
     };
   }, [workoutData, getSetting(SettingKey.REST_DAY_WARNING)]);
 
+  // Handle muscle group click for quick save
+  const handleMuscleGroupClick = (muscleGroup: MuscleGroup) => {
+    const config = getMuscleGroupConfig(muscleGroup);
+    
+    Modal.confirm({
+      title: '快速保存今日訓練',
+      content: (
+        <div>
+          <p>你選擇了 <strong style={{color: config.color}}>{config.icon} {config.label}</strong></p>
+          <p>是否要直接保存為今天的訓練計劃？</p>
+        </div>
+      ),
+      okText: '是，直接保存',
+      cancelText: '否，進入編輯頁面',
+      okButtonProps: { loading: createLoading },
+      onOk: async () => {
+        // Quick save with selected muscle group
+        if (!currentUser) {
+          message.error('請先登入');
+          return;
+        }
+        
+        const quickSaveData = {
+          userId: currentUser.uid,
+          date: dayjs().format('YYYY-MM-DD'),
+          muscleGroups: [muscleGroup],
+          completed: true, // Set as completed
+          notes: `快速保存 - ${config.label}訓練`,
+          isRestDay: false,
+        };
+        
+        createWorkout(
+          {
+            resource: 'workouts',
+            values: quickSaveData,
+          },
+          {
+            onSuccess: () => {
+              message.success(`${config.icon} ${config.label}訓練計劃已保存！`);
+              // Stay on dashboard to see updated status
+            },
+            onError: (error) => {
+              const errorMessage = error?.message || error?.toString() || 'Unknown error';
+              message.error(`保存失敗：${errorMessage}`);
+            },
+          }
+        );
+      },
+      onCancel: () => {
+        // Navigate to create workout form with today's date and pre-selected muscle group
+        navigate(`/create-plan?date=${dayjs().format('YYYY-MM-DD')}&muscle=${muscleGroup}`);
+      },
+    });
+  };
+
   // Handle settings update
   const handleUpdateRestDayWarning = async () => {
     await updateSetting(SettingKey.REST_DAY_WARNING, restDayWarning);
@@ -357,6 +415,7 @@ const WorkoutDashboard: React.FC = () => {
                   textAlign: "center"
                 }}
                 hoverable
+                onClick={() => handleMuscleGroupClick(item.muscleGroup)}
               >
                 <div style={{ 
                   fontSize: "36px", 

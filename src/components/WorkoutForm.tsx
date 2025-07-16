@@ -1,5 +1,5 @@
 import React from "react";
-import { Form, Input, DatePicker, Button, Card, message, Row, Col, Switch, Select, InputNumber, Divider } from "antd";
+import { Form, Input, DatePicker, Button, Card, message, Row, Col, Switch, Select, InputNumber, Divider, Modal } from "antd";
 import { useCreate, useUpdate, useOne } from "@refinedev/core";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import dayjs from "dayjs";
@@ -102,6 +102,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const currentUser = auth.currentUser;
+  
+  // Get pre-selected muscle group from URL if any
+  const preSelectedMuscle = searchParams.get('muscle') as MuscleGroup;
 
   const { mutate: createWorkout, isLoading: createLoading } = useCreate();
   const { mutate: updateWorkout, isLoading: updateLoading } = useUpdate();
@@ -119,19 +122,84 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
   const existingWorkout = workoutData?.data;
   const selectedDate = searchParams.get('date');
 
-  // Handle muscle group selection
+  // Handle muscle group selection with quick save option
   const handleMuscleGroupClick = (muscleGroup: MuscleGroup) => {
     if (isRestDay) return;
 
-    const newSelection = selectedMuscleGroups.includes(muscleGroup)
-      ? selectedMuscleGroups.filter(mg => mg !== muscleGroup)
-      : [...selectedMuscleGroups, muscleGroup];
+    const isCurrentlySelected = selectedMuscleGroups.includes(muscleGroup);
+    
+    // If this is a new mode (create) and we're selecting a muscle group (not deselecting)
+    // and the selected date is today, ask if user wants to quick save
+    const selectedFormDate = form.getFieldValue('date');
+    const isToday = selectedFormDate && selectedFormDate.format('YYYY-MM-DD') === dayjs().format('YYYY-MM-DD');
+    
+    if (mode === 'create' && !isCurrentlySelected && isToday) {
+      const muscleConfig = muscleGroupsConfig.find(config => config.key === muscleGroup);
+      
+      Modal.confirm({
+        title: '快速保存今日訓練',
+        content: (
+          <div>
+            <p>你選擇了 <strong style={{color: muscleConfig?.color}}>{muscleConfig?.emoji} {muscleConfig?.label}</strong></p>
+            <p>是否要直接保存為今天的訓練計劃？</p>
+          </div>
+        ),
+        okText: '是，直接保存',
+        cancelText: '否，繼續編輯',
+        onOk: async () => {
+          // Quick save with selected muscle group
+          if (!currentUser) {
+            message.error('請先登入');
+            return;
+          }
+          
+          const quickSaveData = {
+            userId: currentUser.uid,
+            date: dayjs().format('YYYY-MM-DD'),
+            muscleGroups: [muscleGroup],
+            completed: false,
+            notes: `快速保存 - ${muscleConfig?.label}訓練`,
+            isRestDay: false,
+          };
+          
+          createWorkout(
+            {
+              resource: 'workouts',
+              values: quickSaveData,
+            },
+            {
+              onSuccess: () => {
+                message.success(`${muscleConfig?.emoji} ${muscleConfig?.label}訓練計劃已保存！`);
+                navigate('/calendar');
+              },
+              onError: (error) => {
+                const errorMessage = error?.message || error?.toString() || 'Unknown error';
+                message.error(`保存失敗：${errorMessage}`);
+              },
+            }
+          );
+        },
+        onCancel: () => {
+          // Continue with normal selection behavior
+          const newSelection = [...selectedMuscleGroups, muscleGroup];
+          setSelectedMuscleGroups(newSelection);
+          setTimeout(() => {
+            form.setFieldValue('muscleGroups', newSelection);
+          }, 0);
+        },
+      });
+    } else {
+      // Normal selection behavior
+      const newSelection = isCurrentlySelected
+        ? selectedMuscleGroups.filter(mg => mg !== muscleGroup)
+        : [...selectedMuscleGroups, muscleGroup];
 
-    setSelectedMuscleGroups(newSelection);
-    // Use setTimeout to avoid circular reference issues
-    setTimeout(() => {
-      form.setFieldValue('muscleGroups', newSelection);
-    }, 0);
+      setSelectedMuscleGroups(newSelection);
+      // Use setTimeout to avoid circular reference issues
+      setTimeout(() => {
+        form.setFieldValue('muscleGroups', newSelection);
+      }, 0);
+    }
   };
 
   // Handle rest day toggle
@@ -383,24 +451,35 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
           notes: existingCardio.notes || ''
         });
       }
-    } else if (selectedDate) {
-      // New mode with selected date
-      form.setFieldsValue({
-        date: dayjs(selectedDate),
-        notes: "",
-      });
-      setSelectedMuscleGroups([]);
+    } else {
+      // New mode - check for URL parameters
+      const preSelectedMuscle = searchParams.get('muscle') as MuscleGroup;
+      const initialMuscleGroups = preSelectedMuscle && Object.values(MuscleGroup).includes(preSelectedMuscle) 
+        ? [preSelectedMuscle] 
+        : [];
+      
+      if (selectedDate) {
+        // New mode with selected date
+        form.setFieldsValue({
+          date: dayjs(selectedDate),
+          notes: "",
+          muscleGroups: initialMuscleGroups,
+        });
+      } else {
+        // New mode without selected date
+        form.setFieldsValue({
+          date: dayjs(),
+          notes: "",
+          muscleGroups: initialMuscleGroups,
+        });
+      }
+      
+      setSelectedMuscleGroups(initialMuscleGroups);
       setCompleted(false);
       setIsRestDay(false);
       setHasCardio(false);
-    } else {
-      // New mode without selected date
-      form.setFieldsValue({
-        date: dayjs(),
-        notes: "",
-      });
     }
-  }, [existingWorkout, selectedDate, form]);
+  }, [existingWorkout, selectedDate, searchParams, form]);
 
   const getTitle = () => {
     if (mode === "edit") {
