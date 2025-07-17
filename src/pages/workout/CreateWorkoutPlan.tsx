@@ -9,7 +9,6 @@ import {
   Switch, 
   Row, 
   Col,
-  Typography,
   Space
 } from "antd";
 import { useCreate, useUpdate, useOne } from "@refinedev/core";

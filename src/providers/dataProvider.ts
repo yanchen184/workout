@@ -111,7 +111,7 @@ export const firebaseDataProvider: DataProvider = {
       const now = new Date();
       
       // Clean the variables object to remove any undefined values or special Firestore objects
-      const cleanVariables = JSON.parse(JSON.stringify(variables, (key, value) => {
+      const cleanVariables = JSON.parse(JSON.stringify(variables, (_key, value) => {
         // Handle special Firestore objects
         if (value && typeof value === 'object' && value.constructor && value.constructor.name === 'FieldValue') {
           return value; // Keep Firestore special values as-is

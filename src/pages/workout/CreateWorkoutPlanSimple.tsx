@@ -9,7 +9,6 @@ import {
   Switch, 
   Row, 
   Col,
-  Typography,
   Space
 } from "antd";
 import { useCreate } from "@refinedev/core";
@@ -18,7 +17,6 @@ import dayjs from "dayjs";
 import { MuscleGroup } from "../../types";
 import { auth } from "../../config/firebase";
 
-const { Title, Text } = Typography;
 const { TextArea } = Input;
 
 interface CreateWorkoutPlanSimpleProps {

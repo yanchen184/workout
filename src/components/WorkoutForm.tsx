@@ -103,8 +103,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
   const [searchParams] = useSearchParams();
   const currentUser = auth.currentUser;
   
-  // Get pre-selected muscle group from URL if any
-  const preSelectedMuscle = searchParams.get('muscle') as MuscleGroup;
+  // Note: Pre-selected muscle group from URL is handled in useEffect
 
   const { mutate: createWorkout, isLoading: createLoading } = useCreate();
   const { mutate: updateWorkout, isLoading: updateLoading } = useUpdate();
@@ -266,9 +265,9 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
         } else {
           cleaned[key] = value;
         }
-      } else if (value && typeof value === 'object' && value.constructor && value.constructor.name === 'FieldValue') {
-        // Special case for deleteField and other Firestore special values
-        cleaned[key] = value;
+      } else if (value && typeof value === 'object' && Object.prototype.hasOwnProperty.call(value, 'constructor') && value.constructor?.name === 'FieldValue') {
+      // Special case for deleteField and other Firestore special values
+      cleaned[key] = value;
       }
     }
     
