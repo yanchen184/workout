@@ -18,7 +18,6 @@ import dayjs from "dayjs";
 import { WorkoutRecord, MuscleGroup } from "../../types";
 import { auth } from "../../config/firebase";
 
-const { Title, Text } = Typography;
 const { TextArea } = Input;
 
 interface CreateWorkoutPlanProps {
