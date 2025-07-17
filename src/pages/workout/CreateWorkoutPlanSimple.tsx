@@ -12,10 +12,10 @@ import {
   Typography,
   Space
 } from "antd";
-import { useCreate, useUpdate, useOne } from "@refinedev/core";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useCreate } from "@refinedev/core";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import dayjs from "dayjs";
-import { WorkoutRecord, MuscleGroup } from "../../types";
+import { MuscleGroup } from "../../types";
 import { auth } from "../../config/firebase";
 
 const { Title, Text } = Typography;
@@ -74,15 +74,13 @@ const CreateWorkoutPlanSimple: React.FC<CreateWorkoutPlanSimpleProps> = ({ mode 
   const [isRestDay, setIsRestDay] = useState(false);
 
   const navigate = useNavigate();
-  const { id } = useParams();
   const [searchParams] = useSearchParams();
   const currentUser = auth.currentUser;
 
   // API hooks
   const { mutate: createWorkout, isLoading: createLoading } = useCreate();
-  const { mutate: updateWorkout, isLoading: updateLoading } = useUpdate();
   
-  const isLoading = createLoading || updateLoading;
+  const isLoading = createLoading;
   const selectedDate = searchParams.get('date');
 
   console.log('🔍 Component state:', {
