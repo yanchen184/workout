@@ -248,7 +248,7 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
   };
 
   // Clean data for Firebase (remove undefined values and handle deleteField)
-  const cleanDataForFirebase = (data: any) => {
+  const cleanDataForFirebase = (data: any): any => {
     const cleaned: any = {};
     
     for (const [key, value] of Object.entries(data)) {
@@ -256,8 +256,8 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
         if (Array.isArray(value)) {
           // Handle arrays
           cleaned[key] = value;
-        } else if (typeof value === 'object' && value.constructor === Object) {
-          // Recursively clean nested objects
+        } else if (typeof value === 'object' && value !== null && Object.getPrototypeOf(value) === Object.prototype) {
+          // Recursively clean nested objects (plain objects only)
           const cleanedNestedObject = cleanDataForFirebase(value);
           if (Object.keys(cleanedNestedObject).length > 0) {
             cleaned[key] = cleanedNestedObject;
@@ -265,9 +265,10 @@ const WorkoutForm: React.FC<WorkoutFormProps> = ({ mode }) => {
         } else {
           cleaned[key] = value;
         }
-      } else if (value && typeof value === 'object' && Object.prototype.hasOwnProperty.call(value, 'constructor') && value.constructor?.name === 'FieldValue') {
-      // Special case for deleteField and other Firestore special values
-      cleaned[key] = value;
+      } else if (value && typeof value === 'object' && value !== null) {
+        // Special case for deleteField and other Firestore special values
+        // Check if it's a Firebase FieldValue without accessing constructor
+        cleaned[key] = value;
       }
     }
     
