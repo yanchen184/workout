@@ -1,6 +1,6 @@
 {
   "name": "workout-calendar",
-  "version": "1.13.0",
+  "version": "2.0.0",
   "description": "Fitness workout calendar application with Firebase integration",
   "homepage": "https://yanchen184.github.io/workout",
   "scripts": {
@@ -18,22 +18,31 @@
     "@refinedev/react-router-v6": "^4.5.5",
     "@uiw/react-md-editor": "^4.0.7",
     "antd": "^5.12.8",
+    "clsx": "^2.1.1",
     "dayjs": "^1.11.10",
     "firebase": "^10.7.1",
+    "framer-motion": "^12.23.24",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.8.1"
   },
   "devDependencies": {
+    "@headlessui/react": "^2.2.9",
+    "@heroicons/react": "^2.2.0",
+    "@tailwindcss/forms": "^0.5.10",
+    "@tailwindcss/typography": "^0.5.19",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@typescript-eslint/eslint-plugin": "^6.14.0",
     "@typescript-eslint/parser": "^6.14.0",
     "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.22",
     "eslint": "^8.55.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
     "gh-pages": "^6.1.1",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.18",
     "typescript": "^5.2.2",
     "vite": "^5.0.8"
   }

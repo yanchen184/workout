@@ -2,6 +2,7 @@ import { Refine, Authenticated } from "@refinedev/core";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ConfigProvider } from "antd";
 import zhTW from "antd/locale/zh_TW";
+import { useEffect } from "react";
 
 import { firebaseDataProvider } from "./providers/dataProvider";
 import { firebaseAuthProvider } from "./providers/authProvider";
@@ -11,10 +12,18 @@ import WorkoutCalendar from "./components/WorkoutCalendar";
 import WorkoutList from "./components/WorkoutList";
 import { CreateWorkoutPlan } from "./pages/workout";
 import LoginPage from "./pages/LoginPage";
+import { APP_VERSION, BUILD_TIMESTAMP } from "./config/version";
 
 function App() {
   // Use different basename for development and production
   const basename = import.meta.env.DEV ? '/' : '/workout';
+
+  // Display version info in console
+  useEffect(() => {
+    console.log(`%c🏋️ Workout Calendar v${APP_VERSION}`, 'color: #0ea5e9; font-size: 16px; font-weight: bold;');
+    console.log(`%cBuild Time: ${BUILD_TIMESTAMP}`, 'color: #6b7280; font-size: 12px;');
+    console.log(`%c✨ Tailwind CSS UI Redesign`, 'color: #22c55e; font-size: 14px;');
+  }, []);
   
   return (
     <ConfigProvider locale={zhTW}>

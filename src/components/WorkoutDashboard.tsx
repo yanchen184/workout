@@ -1,46 +1,34 @@
-import React, { useMemo, useState } from "react";
-import { Card, Row, Col, Tag, Space, Alert, Button, Modal, Slider, message } from "antd";
-import { SettingOutlined } from "@ant-design/icons";
-import { useList, useCreate } from "@refinedev/core";
+import React, { useMemo } from "react";
+import { useList } from "@refinedev/core";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { WorkoutRecord, MuscleGroup } from "../types";
 import { getMuscleGroupConfig } from "../config/muscleGroups";
 import { auth } from "../config/firebase";
-import { useSettings } from "../hooks/useSettings";
-import { SettingKey } from "../types/settings";
 import { getEffectiveCompletionStatus } from "../utils/dateUtils";
+import { Button } from "../design-system/components/Button";
+import { Card, CardHeader, CardBody } from "../design-system/components/Card";
+import { APP_VERSION } from "../config/version";
 
 // Extend dayjs with relativeTime plugin
 dayjs.extend(relativeTime);
 
-// Define types for cardio and rest day data
-interface CardioActivity {
-  date: string;
-  dateObj: dayjs.Dayjs;
-  type: string;
-  distance?: number;
-  duration?: number;
-  calories?: number;
-  notes?: string;
-  isRestDay: boolean;
-}
-
-interface RestDay {
-  date: string;
-  dateObj: dayjs.Dayjs;
-  notes?: string;
-  hasCardio: boolean;
-}
+// Gradient configurations for muscle groups
+const muscleGradients: Record<MuscleGroup, string> = {
+  [MuscleGroup.CHEST]: "from-red-400 to-red-600",
+  [MuscleGroup.BACK]: "from-green-400 to-green-600",
+  [MuscleGroup.LEGS]: "from-orange-400 to-orange-600",
+  [MuscleGroup.SHOULDERS]: "from-purple-400 to-purple-600",
+  [MuscleGroup.ARMS]: "from-blue-400 to-blue-600",
+  [MuscleGroup.ABS]: "from-cyan-400 to-cyan-600",
+  [MuscleGroup.CARDIO]: "from-pink-400 to-pink-600",
+};
 
 const WorkoutDashboard: React.FC = () => {
   const currentUser = auth.currentUser;
   const navigate = useNavigate();
-  const { getSetting, updateSetting } = useSettings();
-  const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
-  const [restDayWarning, setRestDayWarning] = useState(getSetting(SettingKey.REST_DAY_WARNING));
-  const { mutate: createWorkout, isLoading: createLoading } = useCreate();
 
   // Fetch workout records for statistics
   const { data: workoutData, isLoading } = useList<WorkoutRecord>({
@@ -53,662 +41,355 @@ const WorkoutDashboard: React.FC = () => {
       },
     ],
     pagination: {
-      pageSize: 365, // Get a year's worth of data for statistics
+      pageSize: 365,
     },
   });
 
-  // Calculate cardio and rest day statistics
-  const cardioAndRestStats = useMemo(() => {
-    if (!workoutData?.data) {
-      return {
-        cardioActivities: [] as CardioActivity[],
-        restDays: [] as RestDay[],
-        cardioStats: {
-          totalSessions: 0,
-          totalDistance: 0,
-          totalDuration: 0,
-          totalCalories: 0,
-          mostFrequentType: null
-        }
-      };
-    }
-
-    const workouts = workoutData.data;
-    const now = dayjs();
-    const last30Days = now.subtract(30, 'day');
-    
-    // Filter recent cardio activities and rest days with explicit typing
-    const recentCardioActivities: CardioActivity[] = [];
-    const recentRestDays: RestDay[] = [];
-    const cardioTypeCount = new Map();
-    let totalDistance = 0;
-    let totalDuration = 0;
-    let totalCalories = 0;
-    let totalSessions = 0;
-
-    workouts.forEach(workout => {
-      const workoutDate = dayjs(workout.date);
-      
-      // Only consider recent workouts (last 30 days) and completed ones
-      if (workoutDate.isAfter(last30Days) && getEffectiveCompletionStatus(workout)) {
-        
-        // Check for rest days
-        if ((workout as any).isRestDay) {
-          recentRestDays.push({
-            date: workoutDate.format('YYYY-MM-DD'), // Store as string
-            dateObj: workoutDate, // Store dayjs object for sorting and display
-            notes: workout.notes,
-            hasCardio: !!(workout as any).cardioDetails
-          });
-        }
-        
-        // Check for cardio activities
-        if ((workout as any).cardioDetails) {
-          const cardio = (workout as any).cardioDetails;
-          totalSessions++;
-          
-          if (cardio.distance) totalDistance += cardio.distance;
-          if (cardio.duration) totalDuration += cardio.duration;
-          if (cardio.calories) totalCalories += cardio.calories;
-          
-          // Count cardio types
-          const count = cardioTypeCount.get(cardio.type) || 0;
-          cardioTypeCount.set(cardio.type, count + 1);
-          
-          recentCardioActivities.push({
-            date: workoutDate.format('YYYY-MM-DD'), // Store as string
-            dateObj: workoutDate, // Store dayjs object for sorting and display
-            type: cardio.type,
-            distance: cardio.distance,
-            duration: cardio.duration,
-            calories: cardio.calories,
-            notes: cardio.notes,
-            isRestDay: (workout as any).isRestDay
-          });
-        }
-      }
-    });
-
-    // Find most frequent cardio type
-    let mostFrequentType = null;
-    let maxCount = 0;
-    cardioTypeCount.forEach((count, type) => {
-      if (count > maxCount) {
-        maxCount = count;
-        mostFrequentType = type;
-      }
-    });
-
-    // Sort by date (most recent first)
-    recentCardioActivities.sort((a, b) => b.dateObj.valueOf() - a.dateObj.valueOf());
-    recentRestDays.sort((a, b) => b.dateObj.valueOf() - a.dateObj.valueOf());
-
-    return {
-      cardioActivities: recentCardioActivities.slice(0, 10), // Last 10 activities
-      restDays: recentRestDays.slice(0, 10), // Last 10 rest days
-      cardioStats: {
-        totalSessions,
-        totalDistance,
-        totalDuration,
-        totalCalories,
-        mostFrequentType
-      }
-    };
-  }, [workoutData]);
-  
+  // Calculate muscle group statistics
   const muscleGroupStats = useMemo(() => {
-    if (!workoutData?.data) {
-      return {
-        muscleGroups: [],
-        restWarnings: [],
-      };
-    }
+    if (!workoutData?.data) return [];
 
     const workouts = workoutData.data;
     const now = dayjs();
-    const restDays = getSetting(SettingKey.REST_DAY_WARNING);
+    const muscleGroups: MuscleGroup[] = [
+      MuscleGroup.CHEST,
+      MuscleGroup.BACK,
+      MuscleGroup.LEGS,
+      MuscleGroup.SHOULDERS,
+      MuscleGroup.ARMS,
+      MuscleGroup.ABS,
+    ];
 
-    // Calculate last workout date for each muscle group
-    const muscleGroupLastWorkout = new Map<MuscleGroup, dayjs.Dayjs>();
-    const restWarnings: Array<{muscleGroup: MuscleGroup, daysSinceLastWorkout: number}> = [];
+    return muscleGroups.map((muscle) => {
+      const config = getMuscleGroupConfig(muscle);
+      const muscleWorkouts = workouts
+        .filter((w) => w.muscleGroups.includes(muscle) && getEffectiveCompletionStatus(w))
+        .sort((a, b) => dayjs(b.date).diff(dayjs(a.date)));
 
-    // Find last workout date for each muscle group (exclude CARDIO)
-    workouts.forEach(workout => {
-      if (getEffectiveCompletionStatus(workout) && !workout.isRestDay) {
-        workout.muscleGroups
-          .filter(muscleGroup => muscleGroup !== MuscleGroup.CARDIO) // Exclude cardio from muscle group tracking
-          .forEach(muscleGroup => {
-          const workoutDate = dayjs(workout.date);
-          const lastWorkout = muscleGroupLastWorkout.get(muscleGroup);
-          if (!lastWorkout || workoutDate.isAfter(lastWorkout)) {
-            muscleGroupLastWorkout.set(muscleGroup, workoutDate);
-          }
-        });
-      }
-    });
-
-    // Create muscle group data with color coding (exclude CARDIO)
-    const muscleGroups = Object.values(MuscleGroup)
-      .filter(muscleGroup => muscleGroup !== MuscleGroup.CARDIO) // Exclude cardio from muscle group status
-      .map(muscleGroup => {
-      const config = getMuscleGroupConfig(muscleGroup);
-      const lastWorkout = muscleGroupLastWorkout.get(muscleGroup);
-      
-      let daysSince: number;
-      let status: 'never' | 'fresh' | 'okay' | 'warning' | 'urgent';
-      let displayText: string;
-      let bgColor: string;
-      let textColor: string;
-      
-      if (!lastWorkout) {
-        // Never worked out
-        daysSince = 999;
-        status = 'never';
-        displayText = '從未練習';
-        bgColor = '#f5f5f5';
-        textColor = '#999';
-      } else {
-        daysSince = now.diff(lastWorkout, 'day');
-        displayText = daysSince === 0 ? '今天' :
-                     daysSince === 1 ? '昨天' :
-                     `${daysSince} 天前`;
-        
-        if (daysSince === 0) {
-          // Trained today
-          status = 'fresh';
-          bgColor = '#f6ffed';
-          textColor = '#52c41a';
-        } else if (daysSince <= 1) {
-          // 1 day ago - very fresh
-          status = 'fresh';
-          bgColor = '#f6ffed';
-          textColor = '#73d13d';
-        } else if (daysSince <= restDays) {
-          // Within rest period - okay
-          status = 'okay';
-          bgColor = '#fff7e6';
-          textColor = '#fa8c16';
-        } else if (daysSince <= restDays + 2) {
-          // Just over rest period - warning
-          status = 'warning';
-          bgColor = '#fff2e8';
-          textColor = '#fa541c';
-        } else {
-          // Way overdue - urgent
-          status = 'urgent';
-          bgColor = '#fff1f0';
-          textColor = '#ff4d4f';
-        }
-      }
-
-      // Add to warnings if needed (exclude CARDIO)
-      if (daysSince >= restDays) {
-        restWarnings.push({
-          muscleGroup,
-          daysSinceLastWorkout: daysSince
-        });
-      }
+      const lastWorkout = muscleWorkouts[0];
+      const daysAgo = lastWorkout ? now.diff(dayjs(lastWorkout.date), "day") : 999;
 
       return {
-        muscleGroup,
-        config,
-        lastWorkout,
-        daysSince,
-        status,
-        displayText,
-        bgColor,
-        textColor,
+        id: muscle,
+        name: config.label,
+        icon: config.icon,
+        color: config.color,
+        gradient: muscleGradients[muscle],
+        lastWorkout: daysAgo,
+        totalWorkouts: muscleWorkouts.length,
       };
     });
+  }, [workoutData]);
 
-    // Sort by urgency (most urgent first)
-    muscleGroups.sort((a, b) => {
-      if (a.status === 'never' && b.status !== 'never') return -1;
-      if (a.status !== 'never' && b.status === 'never') return 1;
-      if (a.status === 'never' && b.status === 'never') return 0;
-      return b.daysSince - a.daysSince;
-    });
+  // Calculate general statistics
+  const stats = useMemo(() => {
+    if (!workoutData?.data) {
+      return {
+        weeklyWorkouts: 0,
+        totalMinutes: 0,
+        totalCalories: 0,
+        streak: 0,
+      };
+    }
 
-    return {
-      muscleGroups,
-      restWarnings,
-    };
-  }, [workoutData, getSetting(SettingKey.REST_DAY_WARNING)]);
+    const workouts = workoutData.data.filter(w => getEffectiveCompletionStatus(w));
+    const now = dayjs();
+    const weekAgo = now.subtract(7, "day");
 
-  // Handle muscle group click for quick save
-  const handleMuscleGroupClick = (muscleGroup: MuscleGroup) => {
-    const config = getMuscleGroupConfig(muscleGroup);
-    
-    Modal.confirm({
-      title: '快速保存今日訓練',
-      content: (
-        <div>
-          <p>你選擇了 <strong style={{color: config.color}}>{config.icon} {config.label}</strong></p>
-          <p>是否要直接保存為今天的訓練計劃？</p>
+    const weeklyWorkouts = workouts.filter((w) =>
+      dayjs(w.date).isAfter(weekAgo)
+    ).length;
+
+    const totalMinutes = workouts.reduce((sum, w) => sum + (w.cardioDetails?.duration || 30), 0); // Estimate 30 min per workout if no cardio data
+    const totalCalories = Math.round(totalMinutes * 8); // Rough estimate
+
+    // Calculate streak
+    let streak = 0;
+    const sortedWorkouts = workouts.sort((a, b) => dayjs(b.date).diff(dayjs(a.date)));
+    let currentDate = now.startOf('day');
+
+    for (const workout of sortedWorkouts) {
+      const workoutDate = dayjs(workout.date).startOf('day');
+      const daysDiff = currentDate.diff(workoutDate, 'day');
+
+      if (daysDiff === 0 || daysDiff === 1) {
+        streak++;
+        currentDate = workoutDate;
+      } else {
+        break;
+      }
+    }
+
+    return { weeklyWorkouts, totalMinutes, totalCalories, streak };
+  }, [workoutData]);
+
+  const getStatusColor = (days: number) => {
+    if (days === 0) return "bg-success-100 text-success-700 border-success-300 dark:bg-success-900 dark:text-success-300";
+    if (days <= 2) return "bg-warning-100 text-warning-700 border-warning-300 dark:bg-warning-900 dark:text-warning-300";
+    if (days <= 4) return "bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-900 dark:text-orange-300";
+    return "bg-danger-100 text-danger-700 border-danger-300 dark:bg-danger-900 dark:text-danger-300";
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-dark-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">載入中...</p>
         </div>
-      ),
-      okText: '是，直接保存',
-      cancelText: '否，進入編輯頁面',
-      okButtonProps: { loading: createLoading },
-      onOk: async () => {
-        // Quick save with selected muscle group
-        if (!currentUser) {
-          message.error('請先登入');
-          return;
-        }
-        
-        const quickSaveData = {
-          userId: currentUser.uid,
-          date: dayjs().format('YYYY-MM-DD'),
-          muscleGroups: [muscleGroup],
-          completed: true, // Set as completed
-          notes: `快速保存 - ${config.label}訓練`,
-          isRestDay: false,
-        };
-        
-        createWorkout(
-          {
-            resource: 'workouts',
-            values: quickSaveData,
-          },
-          {
-            onSuccess: () => {
-              message.success(`${config.icon} ${config.label}訓練計劃已保存！`);
-              // Stay on dashboard to see updated status
-            },
-            onError: (error) => {
-              const errorMessage = error?.message || error?.toString() || 'Unknown error';
-              message.error(`保存失敗：${errorMessage}`);
-            },
-          }
-        );
-      },
-      onCancel: () => {
-        // Navigate to create workout form with today's date and pre-selected muscle group
-        navigate(`/create-plan?date=${dayjs().format('YYYY-MM-DD')}&muscle=${muscleGroup}`);
-      },
-    });
-  };
-
-  // Handle settings update
-  const handleUpdateRestDayWarning = async () => {
-    await updateSetting(SettingKey.REST_DAY_WARNING, restDayWarning);
-    setIsSettingsModalVisible(false);
-    message.success(`休息天數警告已設定為 ${restDayWarning} 天`);
-  };
+      </div>
+    );
+  }
 
   return (
-    <div>
-      {/* Rest Day Warnings */}
-      {muscleGroupStats.restWarnings.length > 0 && (
-        <Alert
-          message="⚠️ 休息警告"
-          description={
+    <div className="min-h-screen bg-gray-50 dark:bg-dark-900 transition-colors duration-300">
+      {/* Header Section */}
+      <header className="bg-white dark:bg-dark-800 shadow-sm sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
             <div>
-              <p style={{ marginBottom: "8px" }}>以下部位已經超過 {getSetting(SettingKey.REST_DAY_WARNING)} 天沒有訓練：</p>
-              <Space wrap>
-                {muscleGroupStats.restWarnings.map(({ muscleGroup, daysSinceLastWorkout }) => {
-                  const config = getMuscleGroupConfig(muscleGroup);
-                  return (
-                    <Tag 
-                      key={muscleGroup} 
-                      color="warning"
-                      style={{ 
-                        padding: "4px 8px",
-                        fontSize: "12px"
-                      }}
-                    >
-                      {config.icon} {config.label}: {daysSinceLastWorkout === 999 ? '從未練習' : `${daysSinceLastWorkout} 天`}
-                    </Tag>
-                  );
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+                健身儀表板
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                {new Date().toLocaleDateString("zh-TW", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
                 })}
-              </Space>
+                {" · "}
+                <span className="text-primary-600 dark:text-primary-400">v{APP_VERSION}</span>
+              </p>
             </div>
-          }
-          type="warning"
-          showIcon
-          style={{ marginBottom: "16px" }}
-          action={
-            <Button 
-              size="small" 
-              onClick={() => setIsSettingsModalVisible(true)}
-              icon={<SettingOutlined />}
+            <Button
+              variant="primary"
+              size="md"
+              icon={<span>➕</span>}
+              className="hidden sm:inline-flex"
+              onClick={() => navigate("/create-plan")}
             >
-              設定
-            </Button>
-          }
-        />
-      )}
-
-      {/* Muscle Groups Status */}
-      <Card 
-        title={
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span>💪 肌肉群訓練狀態</span>
-            <Button 
-              size="small" 
-              type="text"
-              onClick={() => setIsSettingsModalVisible(true)}
-              icon={<SettingOutlined />}
-            >
-              警告設定
+              新增訓練
             </Button>
           </div>
-        }
-        loading={isLoading}
-        style={{ margin: "16px 0" }}
-      >
-        <Row gutter={[16, 16]}>
-          {muscleGroupStats.muscleGroups.map((item) => (
-            <Col xs={24} sm={12} md={8} lg={6} key={item.muscleGroup}>
-              <Card
-                size="small"
-                style={{
-                  backgroundColor: item.bgColor,
-                  border: `2px solid ${item.textColor}20`,
-                  borderRadius: "12px",
-                  transition: "all 0.3s ease",
-                  cursor: "pointer",
-                }}
-                bodyStyle={{
-                  padding: "16px",
-                  textAlign: "center"
-                }}
-                hoverable
-                onClick={() => handleMuscleGroupClick(item.muscleGroup)}
-              >
-                <div style={{ 
-                  fontSize: "36px", 
-                  marginBottom: "8px",
-                  filter: item.status === 'never' ? "grayscale(70%)" : "none"
-                }}>
-                  {item.config.icon}
-                </div>
-                
-                <div style={{ 
-                  fontSize: "16px", 
-                  fontWeight: "bold",
-                  color: item.textColor,
-                  marginBottom: "4px"
-                }}>
-                  {item.config.label}
-                </div>
-                
-                <div style={{
-                  fontSize: "14px",
-                  color: item.textColor,
-                  fontWeight: "bold",
-                  marginBottom: "4px"
-                }}>
-                  {item.displayText}
-                </div>
-                
-                {item.lastWorkout && (
-                  <div style={{
-                    fontSize: "11px",
-                    color: "#999",
-                  }}>
-                    {item.lastWorkout.format("MM/DD")}
-                  </div>
-                )}
-                
-                {/* Status indicator */}
-                <div style={{
-                  position: "absolute",
-                  top: "8px",
-                  right: "8px",
-                  width: "12px",
-                  height: "12px",
-                  borderRadius: "50%",
-                  backgroundColor: item.textColor,
-                  opacity: 0.8
-                }} />
-              </Card>
-            </Col>
-          ))}
-        </Row>
-        
-        {/* Legend */}
-        <div style={{ 
-          marginTop: "20px", 
-          padding: "16px", 
-          backgroundColor: "#fafafa", 
-          borderRadius: "8px",
-          fontSize: "12px"
-        }}>
-          <div style={{ fontWeight: "bold", marginBottom: "8px" }}>🎨 顏色說明：</div>
-          <Space wrap>
-            <Tag color="success">綠色：最近 1 天</Tag>
-            <Tag color="warning">橙色：{getSetting(SettingKey.REST_DAY_WARNING)} 天內</Tag>
-            <Tag color="volcano">深橙：剛過期</Tag>
-            <Tag color="error">紅色：急需訓練</Tag>
-            <Tag color="default">灰色：從未練習</Tag>
-          </Space>
         </div>
-      </Card>
+      </header>
 
-      {/* Cardio Activities and Rest Days */}
-      <Row gutter={[16, 16]} style={{ margin: "16px 0" }}>
-        {/* Cardio Activities */}
-        <Col xs={24} lg={12}>
-          <Card 
-            title={
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span>🏃 近期有氧活動</span>
-                {cardioAndRestStats.cardioStats.totalSessions > 0 && (
-                  <Tag color="orange">{cardioAndRestStats.cardioStats.totalSessions} 次</Tag>
-                )}
-              </div>
-            }
-            loading={isLoading}
-            size="small"
-          >
-            {cardioAndRestStats.cardioActivities.length > 0 ? (
-              <>
-                {/* Cardio Activities List */}
-                <div style={{ maxHeight: "400px", overflowY: "auto" }}>
-                  {cardioAndRestStats.cardioActivities.map((activity, index) => {
-                    const cardioTypes = {
-                      running: { label: "跑步", emoji: "🏃", color: "#52c41a" },
-                      basketball: { label: "籃球", emoji: "🏀", color: "#fa8c16" },
-                      squash: { label: "壁球", emoji: "🎾", color: "#1890ff" },
-                      bowling: { label: "保齡球", emoji: "🎳", color: "#722ed1" },
-                      swimming: { label: "游泳", emoji: "🏊", color: "#13c2c2" },
-                      cycling: { label: "騎車", emoji: "🚴", color: "#eb2f96" },
-                      rope: { label: "跳繩", emoji: "🪢", color: "#f5222d" },
-                      walking: { label: "健走", emoji: "🚶", color: "#52c41a" },
-                      yoga: { label: "瑜伽", emoji: "🧘", color: "#722ed1" },
-                      other: { label: "其他", emoji: "🏃", color: "#666" }
-                    };
-                    
-                    const typeInfo = (cardioTypes as any)[activity.type] || cardioTypes.other;
-                    
-                    return (
-                      <div 
-                        key={index}
-                        style={{
-                          padding: "12px",
-                          border: "1px solid #f0f0f0",
-                          borderRadius: "6px",
-                          marginBottom: "8px",
-                          backgroundColor: activity.isRestDay ? "#f6ffed" : "#fafafa"
-                        }}
-                      >
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                            <span style={{ fontSize: "18px" }}>{typeInfo.emoji}</span>
-                            <span style={{ fontWeight: "bold", color: typeInfo.color }}>{typeInfo.label}</span>
-                            {activity.isRestDay && (
-                              <Tag color="green">休息日</Tag>
-                            )}
-                          </div>
-                          <div style={{ fontSize: "12px", color: "#999" }}>
-                            {activity.dateObj.format("MM/DD")}
-                          </div>
-                        </div>
-                        
-                        <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
-                          {activity.distance && (
-                            <div style={{ fontSize: "12px" }}>
-                              <span style={{ color: "#666" }}>距離: </span>
-                              <span style={{ fontWeight: "bold" }}>{activity.distance} 公里</span>
-                            </div>
-                          )}
-                          {activity.duration && (
-                            <div style={{ fontSize: "12px" }}>
-                              <span style={{ color: "#666" }}>時間: </span>
-                              <span style={{ fontWeight: "bold" }}>{activity.duration} 分鐘</span>
-                            </div>
-                          )}
-                          {activity.calories && (
-                            <div style={{ fontSize: "12px" }}>
-                              <span style={{ color: "#666" }}>熱量: </span>
-                              <span style={{ fontWeight: "bold" }}>{activity.calories} kcal</span>
-                            </div>
-                          )}
-                        </div>
-                        
-                        {activity.notes && (
-                          <div style={{ marginTop: "8px", fontSize: "12px", color: "#666", fontStyle: "italic" }}>
-                            💭 {activity.notes}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {[
+            {
+              label: "本週訓練",
+              value: stats.weeklyWorkouts.toString(),
+              unit: "次",
+              color: "text-primary-600 dark:text-primary-400",
+              icon: "📊",
+            },
+            {
+              label: "總訓練時長",
+              value: stats.totalMinutes.toString(),
+              unit: "分鐘",
+              color: "text-success-600 dark:text-success-400",
+              icon: "⏱️",
+            },
+            {
+              label: "消耗熱量",
+              value: stats.totalCalories.toLocaleString(),
+              unit: "kcal",
+              color: "text-warning-600 dark:text-warning-400",
+              icon: "🔥",
+            },
+            {
+              label: "連續訓練",
+              value: stats.streak.toString(),
+              unit: "天",
+              color: "text-secondary-600 dark:text-secondary-400",
+              icon: "⚡",
+            },
+          ].map((stat, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <Card
+                variant="glass"
+                className="p-6 hover:shadow-lg transition-shadow duration-300"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {stat.label}
+                    </p>
+                    <p className={`text-3xl font-bold ${stat.color} mt-2`}>
+                      {stat.value}
+                      <span className="text-sm font-normal ml-1 text-gray-500">
+                        {stat.unit}
+                      </span>
+                    </p>
+                  </div>
+                  <div className="w-12 h-12 bg-gray-100 dark:bg-dark-700 rounded-full flex items-center justify-center text-2xl">
+                    {stat.icon}
+                  </div>
                 </div>
-              </>
-            ) : (
-              <div style={{ textAlign: "center", padding: "40px 20px", color: "#999" }}>
-                <div style={{ fontSize: "48px", marginBottom: "16px" }}>🏃</div>
-                <div style={{ fontSize: "16px", marginBottom: "8px" }}>還沒有有氧活動記錄</div>
-                <div style={{ fontSize: "14px" }}>開始記錄你的有氧運動吧！</div>
-              </div>
-            )}
-          </Card>
-        </Col>
-        
-        {/* Rest Days */}
-        <Col xs={24} lg={12}>
-          <Card 
-            title={
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span>😴 近期休息日</span>
-                {cardioAndRestStats.restDays.length > 0 && (
-                  <Tag color="green">{cardioAndRestStats.restDays.length} 天</Tag>
-                )}
-              </div>
-            }
-            loading={isLoading}
-            size="small"
-          >
-            {cardioAndRestStats.restDays.length > 0 ? (
-              <div style={{ maxHeight: "400px", overflowY: "auto" }}>
-                {cardioAndRestStats.restDays.map((restDay, index) => (
-                  <div 
-                    key={index}
-                    style={{
-                      padding: "12px",
-                      border: "1px solid #f0f0f0",
-                      borderRadius: "6px",
-                      marginBottom: "8px",
-                      backgroundColor: "#f6ffed"
-                    }}
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Muscle Groups Grid */}
+        <Card className="mb-8">
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                肌肉群訓練狀態
+              </h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/list")}
+              >
+                查看全部
+              </Button>
+            </div>
+          </CardHeader>
+          <CardBody>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+              {muscleGroupStats.map((muscle, index) => (
+                <motion.div
+                  key={muscle.id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: index * 0.05 }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <div
+                    className={`relative p-4 rounded-xl bg-gradient-to-br ${muscle.gradient} cursor-pointer shadow-lg hover:shadow-xl transition-all duration-300`}
+                    onClick={() => navigate(`/list?muscle=${muscle.id}`)}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <span style={{ fontSize: "18px" }}>😴</span>
-                        <span style={{ fontWeight: "bold", color: "#52c41a" }}>休息日</span>
-                        {restDay.hasCardio && (
-                          <Tag color="orange">含有氧</Tag>
-                        )}
+                    <div className="text-center text-white">
+                      <div className="text-3xl mb-2">{muscle.icon}</div>
+                      <p className="font-semibold text-sm">{muscle.name}</p>
+                      <div
+                        className={`mt-2 px-2 py-1 rounded-full text-xs border ${getStatusColor(
+                          muscle.lastWorkout
+                        )}`}
+                      >
+                        {muscle.lastWorkout === 0
+                          ? "今天"
+                          : muscle.lastWorkout > 30
+                          ? "超過30天"
+                          : `${muscle.lastWorkout} 天前`}
                       </div>
-                      <div style={{ fontSize: "12px", color: "#999" }}>
-                        {restDay.dateObj.format("MM/DD (ddd)")}
-                      </div>
+                      <p className="text-xs mt-1 opacity-80">
+                        共 {muscle.totalWorkouts} 次
+                      </p>
                     </div>
-                    
-                    {restDay.notes && (
-                      <div style={{ fontSize: "12px", color: "#666", fontStyle: "italic" }}>
-                        💭 {restDay.notes}
-                      </div>
+                    {muscle.lastWorkout === 0 && (
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-success-500 rounded-full animate-pulse" />
                     )}
-                    
-                    <div style={{ marginTop: "8px", fontSize: "11px", color: "#999" }}>
-                      {restDay.dateObj.fromNow()}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </CardBody>
+        </Card>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              快速操作
+            </h3>
+            <div className="space-y-3">
+              <Button
+                variant="primary"
+                fullWidth
+                onClick={() => navigate("/create-plan")}
+              >
+                🏋️ 新增訓練記錄
+              </Button>
+              <Button
+                variant="outline"
+                fullWidth
+                onClick={() => navigate("/calendar")}
+              >
+                📅 查看訓練日曆
+              </Button>
+              <Button
+                variant="outline"
+                fullWidth
+                onClick={() => navigate("/list")}
+              >
+                📝 訓練歷史記錄
+              </Button>
+            </div>
+          </Card>
+
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              訓練提醒
+            </h3>
+            <div className="space-y-3">
+              {muscleGroupStats
+                .filter((m) => m.lastWorkout > 4)
+                .slice(0, 3)
+                .map((muscle) => (
+                  <div
+                    key={muscle.id}
+                    className="flex items-center justify-between p-3 bg-warning-50 dark:bg-warning-900/20 rounded-lg border border-warning-200 dark:border-warning-800"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">{muscle.icon}</span>
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-white">
+                          {muscle.name}
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          {muscle.lastWorkout} 天未訓練
+                        </p>
+                      </div>
                     </div>
+                    <Button
+                      variant="warning"
+                      size="sm"
+                      onClick={() => navigate(`/create-plan?muscle=${muscle.id}`)}
+                    >
+                      訓練
+                    </Button>
                   </div>
                 ))}
-              </div>
-            ) : (
-              <div style={{ textAlign: "center", padding: "40px 20px", color: "#999" }}>
-                <div style={{ fontSize: "48px", marginBottom: "16px" }}>😴</div>
-                <div style={{ fontSize: "16px", marginBottom: "8px" }}>最近都沒有休息</div>
-                <div style={{ fontSize: "14px" }}>記得適當休息喔！</div>
-              </div>
-            )}
+              {muscleGroupStats.filter((m) => m.lastWorkout > 4).length === 0 && (
+                <p className="text-center text-gray-500 dark:text-gray-400 py-4">
+                  ✨ 太棒了！所有肌肉群都有定期訓練
+                </p>
+              )}
+            </div>
           </Card>
-        </Col>
-      </Row>
-
-      {/* Settings Modal */}
-      <Modal
-        title={
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <SettingOutlined />
-            休息天數警告設定
-          </div>
-        }
-        open={isSettingsModalVisible}
-        onCancel={() => setIsSettingsModalVisible(false)}
-        onOk={handleUpdateRestDayWarning}
-        okText="確定"
-        cancelText="取消"
-      >
-        <div style={{ padding: "20px 0" }}>
-          <div style={{ marginBottom: "20px" }}>
-            <h4>多少天沒練習就提醒？</h4>
-            <p style={{ color: "#666", fontSize: "14px" }}>
-              當某個肌肉群超過設定天數沒有訓練時，會顯示警告提醒並改變顏色。
-            </p>
-          </div>
-          
-          <div style={{ marginBottom: "20px" }}>
-            <Slider
-              min={1}
-              max={14}
-              value={restDayWarning}
-              onChange={setRestDayWarning}
-              marks={{
-                1: '1天',
-                3: '3天',
-                7: '1週',
-                14: '2週'
-              }}
-              style={{ marginBottom: "10px" }}
-            />
-            <div style={{ textAlign: "center", fontSize: "16px", fontWeight: "bold" }}>
-              {restDayWarning} 天
-            </div>
-          </div>
-
-          <div style={{ 
-            padding: "12px", 
-            backgroundColor: "#f0f8ff", 
-            borderRadius: "6px",
-            border: "1px solid #d6e4ff"
-          }}>
-            <div style={{ fontSize: "14px", color: "#1890ff" }}>
-              💡 建議設定：
-            </div>
-            <ul style={{ margin: "8px 0 0 16px", fontSize: "12px", color: "#666" }}>
-              <li>初學者：2-3天（肌肉恢復較快）</li>
-              <li>中級者：3-4天（適中的恢復時間）</li>
-              <li>進階者：5-7天（需要更多恢復時間）</li>
-            </ul>
-          </div>
         </div>
-      </Modal>
+      </main>
+
+      {/* Floating Action Button (Mobile) */}
+      <div className="lg:hidden fixed bottom-6 right-6 z-50">
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: "spring", stiffness: 260, damping: 20 }}
+        >
+          <Button
+            variant="primary"
+            rounded="full"
+            className="shadow-xl hover:shadow-2xl w-14 h-14 p-0 text-2xl"
+            onClick={() => navigate("/create-plan")}
+          >
+            +
+          </Button>
+        </motion.div>
+      </div>
     </div>
   );
 };
