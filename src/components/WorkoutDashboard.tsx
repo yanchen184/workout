@@ -81,46 +81,15 @@ const WorkoutDashboard: React.FC = () => {
     });
   }, [workoutData]);
 
-  // Calculate general statistics
-  const stats = useMemo(() => {
-    if (!workoutData?.data) {
-      return {
-        weeklyWorkouts: 0,
-        totalMinutes: 0,
-        totalCalories: 0,
-        streak: 0,
-      };
-    }
+  // Calculate weekly workouts
+  const weeklyWorkouts = useMemo(() => {
+    if (!workoutData?.data) return 0;
 
     const workouts = workoutData.data.filter(w => getEffectiveCompletionStatus(w));
     const now = dayjs();
     const weekAgo = now.subtract(7, "day");
 
-    const weeklyWorkouts = workouts.filter((w) =>
-      dayjs(w.date).isAfter(weekAgo)
-    ).length;
-
-    const totalMinutes = workouts.reduce((sum, w) => sum + (w.cardioDetails?.duration || 30), 0); // Estimate 30 min per workout if no cardio data
-    const totalCalories = Math.round(totalMinutes * 8); // Rough estimate
-
-    // Calculate streak
-    let streak = 0;
-    const sortedWorkouts = workouts.sort((a, b) => dayjs(b.date).diff(dayjs(a.date)));
-    let currentDate = now.startOf('day');
-
-    for (const workout of sortedWorkouts) {
-      const workoutDate = dayjs(workout.date).startOf('day');
-      const daysDiff = currentDate.diff(workoutDate, 'day');
-
-      if (daysDiff === 0 || daysDiff === 1) {
-        streak++;
-        currentDate = workoutDate;
-      } else {
-        break;
-      }
-    }
-
-    return { weeklyWorkouts, totalMinutes, totalCalories, streak };
+    return workouts.filter((w) => dayjs(w.date).isAfter(weekAgo)).length;
   }, [workoutData]);
 
   const getStatusColor = (days: number) => {
@@ -177,68 +146,37 @@ const WorkoutDashboard: React.FC = () => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {[
-            {
-              label: "本週訓練",
-              value: stats.weeklyWorkouts.toString(),
-              unit: "次",
-              color: "text-primary-600 dark:text-primary-400",
-              icon: "📊",
-            },
-            {
-              label: "總訓練時長",
-              value: stats.totalMinutes.toString(),
-              unit: "分鐘",
-              color: "text-success-600 dark:text-success-400",
-              icon: "⏱️",
-            },
-            {
-              label: "消耗熱量",
-              value: stats.totalCalories.toLocaleString(),
-              unit: "kcal",
-              color: "text-warning-600 dark:text-warning-400",
-              icon: "🔥",
-            },
-            {
-              label: "連續訓練",
-              value: stats.streak.toString(),
-              unit: "天",
-              color: "text-secondary-600 dark:text-secondary-400",
-              icon: "⚡",
-            },
-          ].map((stat, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <Card
-                variant="glass"
-                className="p-6 hover:shadow-lg transition-shadow duration-300"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {stat.label}
-                    </p>
-                    <p className={`text-3xl font-bold ${stat.color} mt-2`}>
-                      {stat.value}
-                      <span className="text-sm font-normal ml-1 text-gray-500">
-                        {stat.unit}
-                      </span>
-                    </p>
-                  </div>
-                  <div className="w-12 h-12 bg-gray-100 dark:bg-dark-700 rounded-full flex items-center justify-center text-2xl">
-                    {stat.icon}
-                  </div>
-                </div>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
+        {/* Weekly Training Stats */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <Card
+            variant="glass"
+            className="p-8 hover:shadow-lg transition-shadow duration-300"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  本週訓練
+                </p>
+                <p className="text-5xl font-bold text-primary-600 dark:text-primary-400 mt-2">
+                  {weeklyWorkouts}
+                  <span className="text-lg font-normal ml-2 text-gray-500">
+                    次
+                  </span>
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  過去 7 天內完成的訓練次數
+                </p>
+              </div>
+              <div className="w-20 h-20 bg-gradient-to-br from-primary-400 to-primary-600 rounded-2xl flex items-center justify-center text-4xl shadow-lg">
+                📊
+              </div>
+            </div>
+          </Card>
+        </motion.div>
 
         {/* Muscle Groups Grid */}
         <Card className="mb-8">
