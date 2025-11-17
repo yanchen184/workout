@@ -51,6 +51,7 @@ const WorkoutDashboard: React.FC = () => {
 
     const workouts = workoutData.data;
     const now = dayjs();
+    const startOfMonth = now.startOf('month');
     const muscleGroups: MuscleGroup[] = [
       MuscleGroup.CHEST,
       MuscleGroup.BACK,
@@ -62,12 +63,21 @@ const WorkoutDashboard: React.FC = () => {
 
     return muscleGroups.map((muscle) => {
       const config = getMuscleGroupConfig(muscle);
-      const muscleWorkouts = workouts
-        .filter((w) => w.muscleGroups.includes(muscle) && getEffectiveCompletionStatus(w))
+
+      // 找最近的訓練日期（包含今天安排的，不論是否完成）
+      const allMuscleWorkouts = workouts
+        .filter((w) => w.muscleGroups.includes(muscle))
         .sort((a, b) => dayjs(b.date).diff(dayjs(a.date)));
 
-      const lastWorkout = muscleWorkouts[0];
+      const lastWorkout = allMuscleWorkouts[0];
       const daysAgo = lastWorkout ? now.diff(dayjs(lastWorkout.date), "day") : 999;
+
+      // 計算本月已完成的訓練次數
+      const monthlyWorkouts = workouts.filter((w) =>
+        w.muscleGroups.includes(muscle) &&
+        getEffectiveCompletionStatus(w) &&
+        (dayjs(w.date).isAfter(startOfMonth) || dayjs(w.date).isSame(startOfMonth, 'day'))
+      ).length;
 
       return {
         id: muscle,
@@ -76,7 +86,7 @@ const WorkoutDashboard: React.FC = () => {
         color: config.color,
         gradient: muscleGradients[muscle],
         lastWorkout: daysAgo,
-        totalWorkouts: muscleWorkouts.length,
+        totalWorkouts: monthlyWorkouts,
       };
     });
   }, [workoutData]);
@@ -224,7 +234,7 @@ const WorkoutDashboard: React.FC = () => {
                           : `${muscle.lastWorkout} 天前`}
                       </div>
                       <p className="text-xs mt-1 opacity-80">
-                        共 {muscle.totalWorkouts} 次
+                        本月 {muscle.totalWorkouts} 次
                       </p>
                     </div>
                     {muscle.lastWorkout === 0 && (
